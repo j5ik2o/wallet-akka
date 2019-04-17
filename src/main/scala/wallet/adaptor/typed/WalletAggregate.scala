@@ -1,9 +1,10 @@
 package wallet.adaptor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior }
-import wallet.domain.{ Balance, Money, Wallet }
+import akka.actor.typed.{ActorRef, Behavior}
+import wallet.domain.{Balance, Money, Wallet}
 import WalletProtocol._
+import wallet.WalletId
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -14,6 +15,8 @@ object WalletAggregate {
 
   private def fireEvent(subscribers: Vector[ActorRef[Event]])(event: Event): Unit =
     subscribers.foreach(_ ! event)
+
+  def name(id: WalletId) = "wallet-typed-" + id.asString
 
   def behavior(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Behavior[Message] = Behaviors.setup {
     ctx =>

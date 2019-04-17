@@ -1,8 +1,9 @@
 package wallet.adaptor.untyped
 
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.{Actor, ActorRef, Props}
+import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{ Balance, Money, Wallet }
+import wallet.domain.{Balance, Money, Wallet}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -10,6 +11,8 @@ object WalletAggregate {
 
   def props(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
     Props(new WalletAggregate(receiveTimeout, requestsLimit))
+
+  def name(id: WalletId): String = "wallet-untyped-" + id.asString
 
 }
 

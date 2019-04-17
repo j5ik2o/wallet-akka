@@ -12,6 +12,7 @@ object WalletProtocol {
 
   sealed trait Event extends Message
 
+  // ウォレットの作成
   case class CreateWalletRequest(walletId: WalletId, replyTo: ActorRef[CreateWalletResponse]) extends Message
 
   sealed trait CreateWalletResponse extends Message
