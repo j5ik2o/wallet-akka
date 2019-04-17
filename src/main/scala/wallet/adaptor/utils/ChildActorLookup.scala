@@ -1,8 +1,8 @@
 package wallet.adaptor.utils
 
-import akka.actor.{ Actor, ActorContext, ActorRef, Props }
+import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, Props }
 
-trait ChildActorLookup {
+trait ChildActorLookup extends ActorLogging { this: Actor =>
 
   implicit def context: ActorContext
 
@@ -16,6 +16,7 @@ trait ChildActorLookup {
   protected def forwardToActor: Actor.Receive = {
     case _cmd =>
       val cmd = _cmd.asInstanceOf[CommandRequest]
+      log.info(s"cmd = $cmd")
       context
         .child(childName(toChildId(cmd)))
         .fold(createAndForward(cmd, toChildId(cmd)))(forwardCommand(cmd))

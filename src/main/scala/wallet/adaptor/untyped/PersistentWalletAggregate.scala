@@ -3,19 +3,18 @@ package wallet.adaptor.untyped
 import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{ ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.persistence.{ PersistentActor, RecoveryCompleted }
-import wallet.WalletId
+import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.utils.ULID
 
 import scala.concurrent.duration.FiniteDuration
 
 object PersistentWalletAggregate {
 
-  def props(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new PersistentWalletAggregate(id, receiveTimeout, requestsLimit))
+  def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
+    Props(new PersistentWalletAggregate(id, requestsLimit))
 }
 
-private[untyped] final class PersistentWalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
+private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLimit: Int)
     extends PersistentActor
     with ActorLogging {
 
@@ -25,7 +24,7 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, receiveTime
   }
 
   private val childRef =
-    context.actorOf(WalletAggregate.props(id, receiveTimeout, requestsLimit), name = WalletAggregate.name(id))
+    context.actorOf(WalletAggregate.props(id, requestsLimit), name = WalletAggregate.name(id))
 
   context.watch(childRef)
 
@@ -33,13 +32,13 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, receiveTime
 
   override def receiveRecover: Receive = {
     case e: WalletCreated =>
-      childRef ! CreateWalletRequest(ULID.generate, e.walletId)
+      childRef ! CreateWalletRequest(newULID, e.walletId)
     case e: WalletDeposited =>
-      childRef ! DepositRequest(ULID.generate, e.walletId, e.money, e.createdAt)
+      childRef ! DepositRequest(newULID, e.walletId, e.money, e.createdAt)
     case e: WalletRequested =>
-      childRef ! RequestRequest(ULID.generate, e.requestId, e.walletId, e.money, e.createdAt)
+      childRef ! RequestRequest(newULID, e.requestId, e.walletId, e.money, e.createdAt)
     case e: WalletPayed =>
-      childRef ! PayRequest(ULID.generate, e.walletId, e.money, e.requestId, e.createdAt)
+      childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.createdAt)
     case RecoveryCompleted =>
       log.debug("recovery completed")
   }

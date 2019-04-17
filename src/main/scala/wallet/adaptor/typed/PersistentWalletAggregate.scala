@@ -4,9 +4,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, Terminated }
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
-import wallet.WalletId
+import de.huxhorn.sulky.ulid.ULID
+import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.utils.ULID
 
 import scala.concurrent.duration._
 
@@ -15,16 +15,16 @@ object PersistentWalletAggregate {
   private val eventHandler: (State, Event) => State = { (state, event) =>
     event match {
       case e: WalletCreated =>
-        state.childRef ! CreateWalletRequest(ULID.generate, e.walletId)
+        state.childRef ! CreateWalletRequest(newULID, e.walletId)
         state
       case e: WalletDeposited =>
-        state.childRef ! DepositRequest(ULID.generate, e.walletId, e.money, e.createdAt)
+        state.childRef ! DepositRequest(newULID, e.walletId, e.money, e.createdAt)
         state
       case e: WalletRequested =>
-        state.childRef ! RequestRequest(ULID.generate, e.requestId, e.walletId, e.money, e.createdAt)
+        state.childRef ! RequestRequest(newULID, e.requestId, e.walletId, e.money, e.createdAt)
         state
       case e: WalletPayed =>
-        state.childRef ! PayRequest(ULID.generate, e.walletId, e.money, e.requestId, e.createdAt)
+        state.childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.createdAt)
         state
     }
   }

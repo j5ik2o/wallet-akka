@@ -7,7 +7,7 @@ import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import org.scalatest._
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
-import wallet.utils.ULID
+import wallet._
 
 import scala.concurrent.duration._
 
@@ -24,45 +24,45 @@ class WalletAggregateSpec
 
   "WalletAggregate" - {
     "create" in {
-      val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
+      val walletId  = newULID
+      val walletRef = system.actorOf(WalletAggregate.props(walletId))
 
-      walletRef ! CreateWalletRequest(ULID.generate, walletId)
+      walletRef ! CreateWalletRequest(newULID, walletId)
       expectMsg(CreateWalletSucceeded)
     }
     "addSubscribers" in {
-      val walletId    = ULID.generate
-      val walletRef   = system.actorOf(WalletAggregate.props(walletId, 1 hours))
+      val walletId    = newULID
+      val walletRef   = system.actorOf(WalletAggregate.props(walletId))
       val eventProbes = for (_ <- 1 to 5) yield TestProbe()
-      walletRef ! AddSubscribers(ULID.generate, walletId, eventProbes.map(_.ref).toVector)
+      walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
 
-      walletRef ! CreateWalletRequest(ULID.generate, walletId)
+      walletRef ! CreateWalletRequest(newULID, walletId)
       expectMsg(CreateWalletSucceeded)
       eventProbes.foreach { eventProbe =>
         eventProbe.expectMsgType[WalletCreated].walletId shouldBe walletId
       }
     }
     "deposit" in {
-      val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
+      val walletId  = newULID
+      val walletRef = system.actorOf(WalletAggregate.props(walletId))
 
-      walletRef ! CreateWalletRequest(ULID.generate, walletId)
+      walletRef ! CreateWalletRequest(newULID, walletId)
       expectMsg(CreateWalletSucceeded)
 
       val money = Money(BigDecimal(100))
-      walletRef ! DepositRequest(ULID.generate, walletId, money, Instant.now)
+      walletRef ! DepositRequest(newULID, walletId, money, Instant.now)
       expectMsg(DepositSucceeded)
     }
     "request" in {
-      val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
+      val walletId  = newULID
+      val walletRef = system.actorOf(WalletAggregate.props(walletId))
 
-      walletRef ! CreateWalletRequest(ULID.generate, walletId)
+      walletRef ! CreateWalletRequest(newULID, walletId)
       expectMsg(CreateWalletSucceeded)
 
-      val requestId = ULID.generate
+      val requestId = newULID
       val money     = Money(BigDecimal(100))
-      walletRef ! RequestRequest(ULID.generate, requestId, walletId, money, Instant.now)
+      walletRef ! RequestRequest(newULID, requestId, walletId, money, Instant.now)
       expectMsg(RequestSucceeded)
     }
   }

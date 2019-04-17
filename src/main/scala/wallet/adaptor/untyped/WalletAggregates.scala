@@ -1,26 +1,23 @@
 package wallet.adaptor.untyped
 
-import akka.actor.{ Actor, Props }
-import wallet.CommandId
+import akka.actor.{ Actor, ActorLogging, Props }
+import wallet._
 import wallet.adaptor.utils.ChildActorLookup
-import wallet.utils.ULID
-
-import scala.concurrent.duration.FiniteDuration
 
 object WalletAggregates {
 
-  def props(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue)(
-      propsF: (ULID, FiniteDuration, Int) => Props
+  def props(requestsLimit: Int = Int.MaxValue)(
+      propsF: (ULID, Int) => Props
   ): Props =
-    Props(new WalletAggregates(receiveTimeout, requestsLimit, propsF))
+    Props(new WalletAggregates(requestsLimit, propsF))
 
 }
 
-private[untyped] final class WalletAggregates(
-    receiveTimeout: FiniteDuration,
+private[untyped] class WalletAggregates(
     requestsLimit: Int,
-    propsF: (ULID, FiniteDuration, Int) => Props
+    propsF: (ULID, Int) => Props
 ) extends Actor
+    with ActorLogging
     with ChildActorLookup {
 
   override type ID             = CommandId
@@ -30,7 +27,7 @@ private[untyped] final class WalletAggregates(
 
   override protected def childName(childId: ULID): String = WalletAggregate.name(childId)
 
-  override protected def childProps(childId: ULID): Props = propsF(childId, receiveTimeout, requestsLimit)
+  override protected def childProps(childId: ULID): Props = propsF(childId, requestsLimit)
 
   override protected def toChildId(commandRequest: CommandRequest): CommandId = commandRequest.walletId
 

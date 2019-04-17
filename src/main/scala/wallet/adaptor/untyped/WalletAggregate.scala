@@ -9,18 +9,14 @@ import scala.concurrent.duration.FiniteDuration
 
 object WalletAggregate {
 
-  def props(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new WalletAggregate(id, receiveTimeout, requestsLimit))
+  def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
+    Props(new WalletAggregate(id, requestsLimit))
 
-  def name(id: WalletId): String = "wallet-untyped-" + id.asString
+  def name(id: WalletId): String = "wallet-untyped-" + id.toString
 
 }
 
-private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
-    extends Actor
-    with ActorLogging {
-
-  context.setReceiveTimeout(receiveTimeout)
+private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) extends Actor with ActorLogging {
 
   private def getWallet(w: Option[Wallet]): Wallet =
     w.getOrElse(throw new IllegalStateException("Invalid state"))

@@ -4,8 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import wallet.domain.{ Balance, Money, Wallet }
 import WalletProtocol._
-import wallet.WalletId
-import wallet.utils.ULID
+import wallet._
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -17,7 +16,7 @@ object WalletAggregate {
   private def fireEvent(subscribers: Vector[ActorRef[Event]])(event: Event): Unit =
     subscribers.foreach(_ ! event)
 
-  def name(id: WalletId): String = "wallet-typed-" + id.asString
+  def name(id: WalletId): String = "wallet-typed-" + id.toString
 
   def behavior(
       id: WalletId,

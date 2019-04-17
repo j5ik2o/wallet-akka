@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe 
 import org.scalatest.{ FreeSpecLike, Matchers }
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.Money
-import wallet.utils.ULID
+import wallet._
 
 import scala.concurrent.duration._
 
@@ -29,17 +29,17 @@ class PersistentWalletAggregateSpec
 
   "PersistentWalletAggregate" - {
     "deposit" in {
-      val walletId = ULID.generate
+      val walletId = newULID
       // 永続化アクターを起動
       val walletRef = spawn(PersistentWalletAggregate.behavior(walletId, 1 hours))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(ULID.generate, walletId, Some(createWalletResponseProbe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val depositResponseProbe = TestProbe[DepositResponse]
       val money                = Money(BigDecimal(100))
-      walletRef ! DepositRequest(ULID.generate, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+      walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
       depositResponseProbe.expectMessage(DepositSucceeded)
 
       // アクターを停止する
@@ -49,7 +49,7 @@ class PersistentWalletAggregateSpec
       val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId, 1 hours))
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
-      expectedWalletRef ! GetBalanceRequest(ULID.generate, walletId, getBalanceResponseProbe.ref)
+      expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
       getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
 
     }

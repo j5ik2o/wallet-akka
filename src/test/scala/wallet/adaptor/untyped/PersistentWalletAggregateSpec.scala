@@ -7,7 +7,7 @@ import akka.testkit.{ ImplicitSender, TestKit }
 import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
-import wallet.utils.ULID
+import wallet._
 
 import scala.concurrent.duration._
 
@@ -29,24 +29,24 @@ class PersistentWalletAggregateSpec
 
   "PersistentWalletAggregate" - {
     "deposit" in {
-      val walletId = ULID.generate
+      val walletId = newULID
       // 永続化アクターを起動
-      val walletRef = system.actorOf(PersistentWalletAggregate.props(walletId, 1 hours))
+      val walletRef = system.actorOf(PersistentWalletAggregate.props(walletId))
 
-      walletRef ! CreateWalletRequest(ULID.generate, walletId)
+      walletRef ! CreateWalletRequest(newULID, walletId)
       expectMsg(CreateWalletSucceeded)
 
       val money = Money(BigDecimal(100))
-      walletRef ! DepositRequest(ULID.generate, walletId, money, Instant.now)
+      walletRef ! DepositRequest(newULID, walletId, money, Instant.now)
       expectMsg(DepositSucceeded)
 
       // アクターを停止する
       killActors(walletRef)
 
       // 状態を復元する
-      val expectedWalletRef = system.actorOf(PersistentWalletAggregate.props(walletId, 1 hours))
+      val expectedWalletRef = system.actorOf(PersistentWalletAggregate.props(walletId))
 
-      expectedWalletRef ! GetBalanceRequest(ULID.generate, walletId)
+      expectedWalletRef ! GetBalanceRequest(newULID, walletId)
       expectMsgType[GetBalanceResponse]
 
     }

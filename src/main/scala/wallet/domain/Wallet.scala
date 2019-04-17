@@ -1,6 +1,6 @@
 package wallet.domain
 
-import wallet.utils.ULID
+import wallet.ULID
 
 final case class Wallet(id: ULID, balance: Balance) {
 
