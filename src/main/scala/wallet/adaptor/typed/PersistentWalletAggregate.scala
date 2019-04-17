@@ -4,7 +4,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, Terminated }
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
-import de.huxhorn.sulky.ulid.ULID
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 
@@ -29,7 +28,7 @@ object PersistentWalletAggregate {
     }
   }
 
-  private val commandHandler: (State, Message) => Effect[Event, State] = { (state, command) =>
+  private val commandHandler: (State, CommandRequest) => Effect[Event, State] = { (state, command) =>
     command match {
       case m: CreateWalletRequest =>
         state.childRef ! m
@@ -49,20 +48,19 @@ object PersistentWalletAggregate {
     }
   }
 
-  case class State(childRef: ActorRef[Message])
+  case class State(childRef: ActorRef[CommandRequest])
 
   def behavior(
       id: WalletId,
-      receiveTimeout: FiniteDuration,
       requestsLimit: Int = Int.MaxValue
-  ): Behavior[Message] =
+  ): Behavior[CommandRequest] =
     Behaviors
-      .supervise(Behaviors.setup[Message] { context =>
-        val childRef: ActorRef[Message] =
-          context.spawn(WalletAggregate.behavior(id, receiveTimeout, requestsLimit), WalletAggregate.name(id))
+      .supervise(Behaviors.setup[CommandRequest] { context =>
+        val childRef: ActorRef[CommandRequest] =
+          context.spawn(WalletAggregate.behavior(id, requestsLimit), WalletAggregate.name(id))
         context.watch(childRef)
-        EventSourcedBehavior[Message, Event, State](
-          persistenceId = PersistenceId("abc"),
+        EventSourcedBehavior[CommandRequest, Event, State](
+          persistenceId = PersistenceId(id.toString),
           emptyState = State(childRef),
           commandHandler,
           eventHandler

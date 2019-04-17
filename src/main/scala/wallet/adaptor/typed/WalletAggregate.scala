@@ -1,12 +1,10 @@
 package wallet.adaptor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
-import wallet.domain.{ Balance, Money, Wallet }
-import WalletProtocol._
+import akka.actor.typed.{ ActorRef, Behavior }
 import wallet._
-
-import scala.concurrent.duration.FiniteDuration
+import wallet.adaptor.typed.WalletProtocol._
+import wallet.domain.{ Balance, Money, Wallet }
 
 object WalletAggregate {
 
@@ -20,20 +18,16 @@ object WalletAggregate {
 
   def behavior(
       id: WalletId,
-      receiveTimeout: FiniteDuration,
       requestsLimit: Int = Int.MaxValue
-  ): Behavior[Message] =
-    Behaviors.setup[Message] { ctx =>
+  ): Behavior[CommandRequest] =
+    Behaviors.setup[CommandRequest] { ctx =>
       def onMessage(
           maybeWallet: Option[Wallet],
           requests: Vector[RequestRequest],
           subscribers: Vector[ActorRef[Event]]
-      ): Behaviors.Receive[Message] = {
+      ): Behaviors.Receive[CommandRequest] = {
         val fireEventToSubscribers = fireEvent(subscribers) _
-        Behaviors.receiveMessage[Message] {
-          case Shutdown =>
-            Behaviors.stopped
-
+        Behaviors.receiveMessage[CommandRequest] {
           case GetBalanceRequest(_, walletId, replyTo) if walletId == id =>
             replyTo ! GetBalanceResponse(getWallet(maybeWallet).balance)
             Behaviors.same
@@ -42,7 +36,6 @@ object WalletAggregate {
             onMessage(maybeWallet, requests, subscribers ++ s)
 
           case CreateWalletRequest(_, walletId, replyTo) =>
-            ctx.setReceiveTimeout(receiveTimeout, Shutdown)
             if (maybeWallet.isEmpty)
               replyTo.foreach(_ ! CreateWalletSucceeded)
             else

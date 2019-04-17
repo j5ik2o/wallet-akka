@@ -4,11 +4,9 @@ import java.time.Instant
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import org.scalatest.{ FreeSpecLike, Matchers }
+import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.Money
-import wallet._
-
-import scala.concurrent.duration._
 
 class PersistentWalletAggregateSpec
     extends ScalaTestWithActorTestKit
@@ -31,7 +29,7 @@ class PersistentWalletAggregateSpec
     "deposit" in {
       val walletId = newULID
       // 永続化アクターを起動
-      val walletRef = spawn(PersistentWalletAggregate.behavior(walletId, 1 hours))
+      val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
@@ -46,7 +44,7 @@ class PersistentWalletAggregateSpec
       killActors(walletRef)
 
       // 状態を復元する
-      val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId, 1 hours))
+      val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
       expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)

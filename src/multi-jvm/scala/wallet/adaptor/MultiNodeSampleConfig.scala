@@ -1,4 +1,4 @@
-package wallet.adaptor.untyped
+package wallet.adaptor
 
 import akka.remote.testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
@@ -14,6 +14,11 @@ object MultiNodeSampleConfig extends MultiNodeConfig {
     ConfigFactory
       .parseString(
         """
+      |akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
+      |akka.loglevel = "DEBUG"
+      |akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+      |akka.actor.debug.receive = on
+      |
       |akka.cluster.metrics.enabled=off
       |akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
       |akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

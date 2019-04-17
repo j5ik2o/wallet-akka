@@ -5,19 +5,23 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import wallet.WalletId
 import wallet.adaptor.typed.WalletProtocol.CommandRequest
 
-import scala.concurrent.duration.FiniteDuration
-
 object WalletAggregates {
 
-  def behavior(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Behavior[CommandRequest] = {
+  val name = "wallets"
+
+  def behavior(
+      requestsLimit: Int = Int.MaxValue
+  )(behaviorF: (WalletId, Int) => Behavior[CommandRequest]): Behavior[CommandRequest] = {
     def createAndSend(ctx: ActorContext[CommandRequest], walletId: WalletId): ActorRef[CommandRequest] = {
       ctx.child(WalletAggregate.name(walletId)) match {
         case None =>
           // 子アクター作成
-          ctx.spawn(
-            WalletAggregate.behavior(walletId, receiveTimeout, requestsLimit),
+          val childRef = ctx.spawn(
+            behaviorF(walletId, requestsLimit),
             name = WalletAggregate.name(walletId)
           )
+          ctx.watch(childRef)
+          childRef
         case Some(ref) =>
           // 子アクターの参照取得
           ref.asInstanceOf[ActorRef[CommandRequest]]
@@ -25,6 +29,7 @@ object WalletAggregates {
     }
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage[CommandRequest] { msg =>
+        println(msg)
         createAndSend(ctx, msg.walletId) ! msg
         Behaviors.same
       }

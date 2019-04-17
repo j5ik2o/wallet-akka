@@ -14,7 +14,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
   "WalletAggregate" - {
     "create" in {
       val walletId                  = newULID
-      val walletRef                 = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef                 = spawn(WalletAggregate.behavior(walletId))
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
 
       walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
@@ -22,7 +22,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     "addSubscribers" in {
       val walletId    = newULID
-      val walletRef   = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef   = spawn(WalletAggregate.behavior(walletId))
       val eventProbes = for (_ <- 1 to 5) yield TestProbe[Event]
       walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
 
@@ -35,7 +35,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     "deposit" in {
       val walletId  = newULID
-      val walletRef = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef = spawn(WalletAggregate.behavior(walletId))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
@@ -48,7 +48,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     "request" in {
       val walletId  = newULID
-      val walletRef = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef = spawn(WalletAggregate.behavior(walletId))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))

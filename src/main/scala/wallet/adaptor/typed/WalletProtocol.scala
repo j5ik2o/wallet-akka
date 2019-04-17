@@ -12,8 +12,8 @@ object WalletProtocol {
   sealed trait Event   extends Message
   sealed trait Command extends Message
   sealed trait CommandRequest extends Command {
-    val id: CommandId
-    val walletId: WalletId
+    def id: CommandId
+    def walletId: WalletId
   }
   sealed trait CommandResponse extends Command
 
@@ -96,7 +96,13 @@ object WalletProtocol {
   case class AddSubscribers(id: CommandId, walletId: WalletId, subscribers: Vector[ActorRef[Event]])
       extends CommandRequest
 
-  // シャットダウン
-  case object Shutdown extends Message
+  case object Stop extends CommandRequest {
+    override def id: CommandId      = throw new UnsupportedOperationException
+    override def walletId: WalletId = throw new UnsupportedOperationException
+  }
 
+  case object Idle extends CommandRequest {
+    override def id: CommandId      = throw new UnsupportedOperationException
+    override def walletId: WalletId = throw new UnsupportedOperationException
+  }
 }
