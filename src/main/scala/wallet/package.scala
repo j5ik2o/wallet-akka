@@ -1,5 +1,5 @@
 import wallet.utils.ULID
 package object wallet {
-  type WalletId = ULID
+  type WalletId  = ULID
   type RequestId = ULID
 }
