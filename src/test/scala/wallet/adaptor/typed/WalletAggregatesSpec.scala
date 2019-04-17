@@ -18,7 +18,7 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       val walletId                  = ULID.generate
-      walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
+      walletRef ! CreateWalletRequest(ULID.generate, walletId, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
     }
     "addSubscribers" in {
@@ -29,7 +29,7 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
       walletRef ! AddSubscribers(ULID.generate, walletId, eventProbes.map(_.ref).toVector)
 
       val probe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(ULID.generate, walletId, probe.ref)
+      walletRef ! CreateWalletRequest(ULID.generate, walletId, Some(probe.ref))
       probe.expectMessage(CreateWalletSucceeded)
       eventProbes.foreach { eventProbe =>
         eventProbe.expectMessageType[WalletCreated].walletId shouldBe walletId
@@ -40,12 +40,12 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
 
       val walletId                  = ULID.generate
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
+      walletRef ! CreateWalletRequest(ULID.generate, walletId, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val money               = Money(BigDecimal(100))
       val depositRequestProbe = TestProbe[DepositResponse]
-      walletRef ! DepositRequest(ULID.generate, walletId, money, Instant.now, depositRequestProbe.ref)
+      walletRef ! DepositRequest(ULID.generate, walletId, money, Instant.now, Some(depositRequestProbe.ref))
       depositRequestProbe.expectMessage(DepositSucceeded)
     }
     "request" in {
@@ -53,13 +53,13 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
 
       val walletId                  = ULID.generate
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
+      walletRef ! CreateWalletRequest(ULID.generate, walletId, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val requestId           = ULID.generate
       val money               = Money(BigDecimal(100))
       val requestRequestProbe = TestProbe[RequestResponse]
-      walletRef ! RequestRequest(ULID.generate, requestId, walletId, money, Instant.now, requestRequestProbe.ref)
+      walletRef ! RequestRequest(ULID.generate, requestId, walletId, money, Instant.now, Some(requestRequestProbe.ref))
       requestRequestProbe.expectMessage(RequestSucceeded)
     }
   }

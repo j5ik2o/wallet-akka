@@ -46,18 +46,18 @@ object WalletAggregate {
             case CreateWalletRequest(_, walletId, replyTo) =>
               ctx.setReceiveTimeout(receiveTimeout, Shutdown(ULID.generate, walletId))
               if (maybeWallet.isEmpty)
-                replyTo ! CreateWalletSucceeded
+                replyTo.foreach(_ ! CreateWalletSucceeded)
               else
-                replyTo ! CreateWalletFailed("Already created")
+                replyTo.foreach(_ ! CreateWalletFailed("Already created"))
               fireEventToSubscribers(WalletCreated(walletId))
               onMessage(Some(Wallet(walletId, Balance(Money.zero))), requests, subscribers)
 
             case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
               val currentBalance = getWallet(maybeWallet).balance
               if (currentBalance.add(money) < Balance.zero)
-                replyTo ! DepositFailed("Can not trade because the balance after trading is less than 0")
+                replyTo.foreach(_ ! DepositFailed("Can not trade because the balance after trading is less than 0"))
               else
-                replyTo ! DepositSucceeded
+                replyTo.foreach(_ ! DepositSucceeded)
               fireEventToSubscribers(WalletDeposited(walletId, money, instant))
               onMessage(
                 maybeWallet.map(_.addBalance(money)),
@@ -69,9 +69,9 @@ object WalletAggregate {
                 if walletId == id && requestId.fold(true)(requests.contains) =>
               val currentBalance = getWallet(maybeWallet).balance
               if (currentBalance.sub(money) < Balance.zero)
-                replyTo ! PayFailed("Can not trade because the balance after trading is less than 0")
+                replyTo.foreach(_ ! PayFailed("Can not trade because the balance after trading is less than 0"))
               else
-                replyTo ! PaySucceeded
+                replyTo.foreach(_ ! PaySucceeded)
               fireEventToSubscribers(WalletPayed(walletId, money, requestId, instant))
               onMessage(
                 maybeWallet.map(_.subBalance(money)),
@@ -81,9 +81,9 @@ object WalletAggregate {
 
             case rr @ RequestRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
               if (requests.size > requestsLimit)
-                replyTo ! RequestFailed("Limit over")
+                replyTo.foreach(_ ! RequestFailed("Limit over"))
               else
-                replyTo ! RequestSucceeded
+                replyTo.foreach(_ ! RequestSucceeded)
               fireEventToSubscribers(WalletRequested(questId, walletId, money, instant))
               onMessage(
                 maybeWallet,

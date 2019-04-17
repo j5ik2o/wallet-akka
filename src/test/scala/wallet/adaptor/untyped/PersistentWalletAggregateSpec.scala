@@ -29,7 +29,8 @@ class PersistentWalletAggregateSpec
 
   "PersistentWalletAggregate" - {
     "deposit" in {
-      val walletId  = ULID.generate
+      val walletId = ULID.generate
+      // 永続化アクターを起動
       val walletRef = system.actorOf(PersistentWalletAggregate.props(walletId, 1 hours))
 
       walletRef ! CreateWalletRequest(ULID.generate, walletId)

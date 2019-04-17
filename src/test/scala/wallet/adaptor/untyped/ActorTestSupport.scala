@@ -13,4 +13,5 @@ trait ActorTestSupport { this: TestKit =>
       Thread.sleep(1000) // the actor name is not unique intermittently on travis when creating it again after killActors, this is ducktape.
     }
   }
+
 }

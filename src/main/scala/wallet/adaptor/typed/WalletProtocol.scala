@@ -18,8 +18,11 @@ object WalletProtocol {
   sealed trait CommandResponse extends Command
 
   // ウォレットの作成
-  case class CreateWalletRequest(id: CommandId, walletId: WalletId, replyTo: ActorRef[CreateWalletResponse])
-      extends CommandRequest
+  case class CreateWalletRequest(
+      id: CommandId,
+      walletId: WalletId,
+      replyTo: Option[ActorRef[CreateWalletResponse]] = None
+  ) extends CommandRequest
 
   sealed trait CreateWalletResponse extends Message
 
@@ -35,7 +38,7 @@ object WalletProtocol {
       walletId: WalletId,
       money: Money,
       createdAt: Instant,
-      replyTo: ActorRef[DepositResponse]
+      replyTo: Option[ActorRef[DepositResponse]] = None
   ) extends CommandRequest
 
   sealed trait DepositResponse extends CommandResponse
@@ -53,7 +56,7 @@ object WalletProtocol {
       money: Money,
       requestId: Option[RequestId],
       createdAt: Instant,
-      replyTo: ActorRef[PayResponse]
+      replyTo: Option[ActorRef[PayResponse]] = None
   ) extends CommandRequest
 
   sealed trait PayResponse extends CommandResponse
@@ -72,7 +75,7 @@ object WalletProtocol {
       walletId: WalletId,
       money: Money,
       createdAt: Instant,
-      replyTo: ActorRef[RequestResponse]
+      replyTo: Option[ActorRef[RequestResponse]] = None
   ) extends CommandRequest
 
   sealed trait RequestResponse extends CommandResponse
@@ -81,7 +84,7 @@ object WalletProtocol {
 
   case class RequestFailed(message: String) extends RequestResponse
 
-  case class WalletRequested(id: RequestId, walletId: WalletId, moeny: Money, createdAt: Instant) extends Event
+  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, createdAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId, replyTo: ActorRef[GetBalanceResponse])
