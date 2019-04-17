@@ -1,6 +1,7 @@
 package wallet.adaptor.untyped
 
-import akka.actor.{ ActorLogging, Props }
+import akka.actor.SupervisorStrategy.Stop
+import akka.actor.{ ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.persistence.{ PersistentActor, RecoveryCompleted }
 import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
@@ -14,12 +15,19 @@ object PersistentWalletAggregate {
     Props(new PersistentWalletAggregate(id, receiveTimeout, requestsLimit))
 }
 
-final class PersistentWalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
+private[untyped] final class PersistentWalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
     extends PersistentActor
     with ActorLogging {
 
+  override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
+    case _: Throwable =>
+      Stop
+  }
+
   private val childRef =
     context.actorOf(WalletAggregate.props(id, receiveTimeout, requestsLimit), name = WalletAggregate.name(id))
+
+  context.watch(childRef)
 
   override def persistenceId: String = "p-" + WalletAggregate.name(id)
 
@@ -37,6 +45,8 @@ final class PersistentWalletAggregate(id: WalletId, receiveTimeout: FiniteDurati
   }
 
   override def receiveCommand: Receive = {
+    case Terminated(c) if c == childRef =>
+      context.stop(self)
     case m: CreateWalletRequest =>
       persist(WalletCreated(m.walletId)) { _ =>
         childRef forward m

@@ -50,6 +50,7 @@ class PersistentWalletAggregateSpec
       expectMsgType[GetBalanceResponse]
 
     }
+    // TODO: 子アクターが例外を発生した場合に、永続化アクターが停止すること
   }
 
 }

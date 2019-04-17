@@ -97,6 +97,6 @@ object WalletProtocol {
       extends CommandRequest
 
   // シャットダウン
-  case class Shutdown(id: CommandId, walletId: WalletId) extends CommandRequest
+  case object Shutdown extends Message
 
 }

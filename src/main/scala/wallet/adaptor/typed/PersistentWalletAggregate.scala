@@ -1,24 +1,11 @@
 package wallet.adaptor.typed
 
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.RecoveryCompleted
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, Terminated }
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import wallet.WalletId
-import wallet.adaptor.typed.WalletProtocol.{
-  Command,
-  CommandRequest,
-  CreateWalletRequest,
-  DepositRequest,
-  Event,
-  PayRequest,
-  RequestRequest,
-  WalletCreated,
-  WalletDeposited,
-  WalletPayed,
-  WalletRequested
-}
+import wallet.adaptor.typed.WalletProtocol._
 import wallet.utils.ULID
 
 import scala.concurrent.duration._
@@ -42,7 +29,7 @@ object PersistentWalletAggregate {
     }
   }
 
-  private val commandHandler: (State, CommandRequest) => Effect[Event, State] = { (state, command) =>
+  private val commandHandler: (State, Message) => Effect[Event, State] = { (state, command) =>
     command match {
       case m: CreateWalletRequest =>
         state.childRef ! m
@@ -56,27 +43,32 @@ object PersistentWalletAggregate {
       case m: PayRequest =>
         state.childRef ! m
         Effect.persist(WalletPayed(m.walletId, m.money, m.requestId, m.createdAt))
-      case m: CommandRequest =>
+      case m =>
         state.childRef ! m
         Effect.none
     }
   }
 
-  case class State(childRef: ActorRef[CommandRequest])
+  case class State(childRef: ActorRef[Message])
 
   def behavior(
       id: WalletId,
       receiveTimeout: FiniteDuration,
       requestsLimit: Int = Int.MaxValue
-  ): Behavior[CommandRequest] =
-    Behaviors.setup { implicit context =>
-      val childRef: ActorRef[CommandRequest] =
-        context.spawn(WalletAggregate.behavior(id, receiveTimeout, requestsLimit), WalletAggregate.name(id))
-      EventSourcedBehavior[CommandRequest, Event, State](
-        persistenceId = PersistenceId("abc"),
-        emptyState = State(childRef),
-        commandHandler,
-        eventHandler
-      )
-    }
+  ): Behavior[Message] =
+    Behaviors
+      .supervise(Behaviors.setup[Message] { context =>
+        val childRef: ActorRef[Message] =
+          context.spawn(WalletAggregate.behavior(id, receiveTimeout, requestsLimit), WalletAggregate.name(id))
+        context.watch(childRef)
+        EventSourcedBehavior[Message, Event, State](
+          persistenceId = PersistenceId("abc"),
+          emptyState = State(childRef),
+          commandHandler,
+          eventHandler
+        ).receiveSignal {
+          case (_, Terminated(c)) if c.compareTo(childRef) == 0 =>
+            Behaviors.stopped
+        }
+      }).onFailure[Throwable](SupervisorStrategy.stop)
 }
