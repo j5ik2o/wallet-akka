@@ -1,6 +1,6 @@
 package wallet.adaptor.untyped
 
-import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.{ Balance, Money, Wallet }
@@ -17,7 +17,8 @@ object WalletAggregate {
 }
 
 private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
-    extends Actor {
+    extends Actor
+    with ActorLogging {
 
   context.setReceiveTimeout(receiveTimeout)
 
@@ -34,13 +35,13 @@ private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: Finit
       requests: Vector[RequestRequest],
       subscribers: Vector[ActorRef]
   ): Receive = {
-    case GetBalanceRequest(_, walletId) if walletId == id =>
+    case m @ GetBalanceRequest(_, walletId) if walletId == id =>
       sender() ! GetBalanceResponse(getWallet(maybeWallet).balance)
 
     case AddSubscribers(_, walletId, s) if walletId == id =>
       context.become(onMessage(maybeWallet, requests, subscribers ++ s))
 
-    case CreateWalletRequest(_, walletId) if walletId == id =>
+    case m @ CreateWalletRequest(_, walletId) if walletId == id =>
       if (maybeWallet.isEmpty)
         sender() ! CreateWalletSucceeded
       else
@@ -48,7 +49,7 @@ private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: Finit
       fireEvent(subscribers)(WalletCreated(id))
       context.become(onMessage(Some(Wallet(id, Balance(Money.zero))), requests, subscribers))
 
-    case DepositRequest(_, walletId, money, instant) if walletId == getWallet(maybeWallet).id =>
+    case m @ DepositRequest(_, walletId, money, instant) if walletId == id =>
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.add(money) < Balance.zero)
         sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
@@ -63,7 +64,7 @@ private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: Finit
         )
       )
 
-    case PayRequest(_, walletId, money, requestId, instant)
+    case m @ PayRequest(_, walletId, money, requestId, instant)
         if walletId == id && requestId.fold(true)(requests.contains) =>
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.sub(money) < Balance.zero)

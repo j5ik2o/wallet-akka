@@ -9,13 +9,18 @@ import scala.concurrent.duration.FiniteDuration
 
 object WalletAggregates {
 
-  def props(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new WalletAggregates(receiveTimeout, requestsLimit))
+  def props(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue)(
+      propsF: (ULID, FiniteDuration, Int) => Props
+  ): Props =
+    Props(new WalletAggregates(receiveTimeout, requestsLimit, propsF))
 
 }
 
-private[untyped] final class WalletAggregates(receiveTimeout: FiniteDuration, requestsLimit: Int)
-    extends Actor
+private[untyped] final class WalletAggregates(
+    receiveTimeout: FiniteDuration,
+    requestsLimit: Int,
+    propsF: (ULID, FiniteDuration, Int) => Props
+) extends Actor
     with ChildActorLookup {
 
   override type ID             = CommandId
@@ -25,8 +30,7 @@ private[untyped] final class WalletAggregates(receiveTimeout: FiniteDuration, re
 
   override protected def childName(childId: ULID): String = WalletAggregate.name(childId)
 
-  override protected def childProps(childId: ULID): Props =
-    WalletAggregate.props(childId, receiveTimeout, requestsLimit)
+  override protected def childProps(childId: ULID): Props = propsF(childId, receiveTimeout, requestsLimit)
 
   override protected def toChildId(commandRequest: CommandRequest): CommandId = commandRequest.walletId
 

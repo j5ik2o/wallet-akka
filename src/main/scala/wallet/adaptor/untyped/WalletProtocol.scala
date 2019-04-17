@@ -67,7 +67,7 @@ object WalletProtocol {
 
   case class RequestFailed(message: String) extends RequestResponse
 
-  case class WalletRequested(id: RequestId, walletId: WalletId, money: Money, createdAt: Instant) extends Event
+  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, createdAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId) extends CommandRequest

@@ -29,5 +29,13 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   "com.typesafe.akka" %% "akka-http-testkit"       % akkaHttpVersion % Test,
   "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % Test,
-  "org.scalatest" %% "scalatest" % "3.0.4" % Test
+  "org.scalatest" %% "scalatest" % "3.0.4" % Test,
+  "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % Test,
+  "org.iq80.leveldb" % "leveldb" % "0.9" % Test,
+  "commons-io"                %   "commons-io"                          % "2.4" % Test
+
 )
+
+parallelExecution in Test := false
+
+fork := true

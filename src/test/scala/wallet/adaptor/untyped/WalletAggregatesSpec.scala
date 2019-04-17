@@ -24,14 +24,14 @@ class WalletAggregatesSpec
 
   "WalletAggregate" - {
     "create" in {
-      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours)(WalletAggregate.props))
 
       val walletId = ULID.generate
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
       expectMsg(CreateWalletSucceeded)
     }
     "addSubscribers" in {
-      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours)(WalletAggregate.props))
 
       val walletId    = ULID.generate
       val eventProbes = for (_ <- 1 to 5) yield TestProbe()
@@ -44,7 +44,7 @@ class WalletAggregatesSpec
       }
     }
     "deposit" in {
-      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours)(WalletAggregate.props))
       val walletId  = ULID.generate
 
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
@@ -55,7 +55,7 @@ class WalletAggregatesSpec
       expectMsg(DepositSucceeded)
     }
     "request" in {
-      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours)(WalletAggregate.props))
       val walletId  = ULID.generate
 
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
