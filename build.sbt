@@ -24,9 +24,9 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
   "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
   "com.typesafe.akka" %% "akka-http"               % akkaHttpVersion,
+  "org.scalatest" %% "scalatest" % "3.0.4" % Test,
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
   "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
   "com.typesafe.akka" %% "akka-http-testkit"       % akkaHttpVersion % Test,
-  "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % Test,
-  "org.scalatest" %% "scalatest" % "3.0.5" % Test
+  "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion % Test
 )

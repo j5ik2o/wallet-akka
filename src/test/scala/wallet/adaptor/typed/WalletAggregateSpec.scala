@@ -2,13 +2,13 @@ package wallet.adaptor.typed
 
 import java.time.Instant
 
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ScalaTestWithActorTestKit, TestProbe}
+import org.scalatest._
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.Money
 import wallet.utils.ULID
 
 import scala.concurrent.duration._
-import org.scalatest._
 
 class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike with Matchers {
 
