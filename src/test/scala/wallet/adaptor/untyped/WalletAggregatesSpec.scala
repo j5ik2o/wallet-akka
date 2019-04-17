@@ -4,15 +4,15 @@ import java.time.Instant
 
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
-import org.scalatest._
+import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
 import wallet.utils.ULID
 
 import scala.concurrent.duration._
 
-class WalletAggregateSpec
-    extends TestKit(ActorSystem("WalletAggregateSpec"))
+class WalletAggregatesSpec
+    extends TestKit(ActorSystem("WalletAggregatesSpec"))
     with FreeSpecLike
     with Matchers
     with BeforeAndAfterAll
@@ -24,15 +24,16 @@ class WalletAggregateSpec
 
   "WalletAggregate" - {
     "create" in {
-      val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
 
+      val walletId = ULID.generate
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
       expectMsg(CreateWalletSucceeded)
     }
     "addSubscribers" in {
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
+
       val walletId    = ULID.generate
-      val walletRef   = system.actorOf(WalletAggregate.props(walletId, 1 hours))
       val eventProbes = for (_ <- 1 to 5) yield TestProbe()
       walletRef ! AddSubscribers(ULID.generate, walletId, eventProbes.map(_.ref).toVector)
 
@@ -43,8 +44,8 @@ class WalletAggregateSpec
       }
     }
     "deposit" in {
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
       val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
 
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
       expectMsg(CreateWalletSucceeded)
@@ -54,8 +55,8 @@ class WalletAggregateSpec
       expectMsg(DepositSucceeded)
     }
     "request" in {
+      val walletRef = system.actorOf(WalletAggregates.props(1 hours))
       val walletId  = ULID.generate
-      val walletRef = system.actorOf(WalletAggregate.props(walletId, 1 hours))
 
       walletRef ! CreateWalletRequest(ULID.generate, walletId)
       expectMsg(CreateWalletSucceeded)

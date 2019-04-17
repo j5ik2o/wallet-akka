@@ -3,27 +3,28 @@ package wallet.adaptor.typed
 import java.time.Instant
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import org.scalatest._
+import org.scalatest.{ FreeSpecLike, Matchers }
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.Money
 import wallet.utils.ULID
 
 import scala.concurrent.duration._
 
-class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike with Matchers {
+class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike with Matchers {
 
   "WalletAggregate" - {
     "create" in {
-      val walletId                  = ULID.generate
-      val walletRef                 = spawn(WalletAggregate.behavior(walletId, 1 hours))
-      val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+      val walletRef = spawn(WalletAggregates.behavior(1 hours))
 
+      val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+      val walletId                  = ULID.generate
       walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
     }
     "addSubscribers" in {
+      val walletRef = spawn(WalletAggregates.behavior(1 hours))
+
       val walletId    = ULID.generate
-      val walletRef   = spawn(WalletAggregate.behavior(walletId, 1 hours))
       val eventProbes = for (_ <- 1 to 5) yield TestProbe[Event]
       walletRef ! AddSubscribers(ULID.generate, walletId, eventProbes.map(_.ref).toVector)
 
@@ -35,9 +36,9 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       }
     }
     "deposit" in {
-      val walletId  = ULID.generate
-      val walletRef = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef = spawn(WalletAggregates.behavior(1 hours))
 
+      val walletId                  = ULID.generate
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
@@ -48,9 +49,9 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       depositRequestProbe.expectMessage(DepositSucceeded)
     }
     "request" in {
-      val walletId  = ULID.generate
-      val walletRef = spawn(WalletAggregate.behavior(walletId, 1 hours))
+      val walletRef = spawn(WalletAggregates.behavior(1 hours))
 
+      val walletId                  = ULID.generate
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(ULID.generate, walletId, createWalletResponseProbe.ref)
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)

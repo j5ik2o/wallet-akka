@@ -1,22 +1,23 @@
 package wallet.adaptor.untyped
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ Actor, ActorRef, Props }
 import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{Balance, Money, Wallet}
+import wallet.domain.{ Balance, Money, Wallet }
 
 import scala.concurrent.duration.FiniteDuration
 
 object WalletAggregate {
 
-  def props(receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new WalletAggregate(receiveTimeout, requestsLimit))
+  def props(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int = Int.MaxValue): Props =
+    Props(new WalletAggregate(id, receiveTimeout, requestsLimit))
 
   def name(id: WalletId): String = "wallet-untyped-" + id.asString
 
 }
 
-final class WalletAggregate(receiveTimeout: FiniteDuration, requestsLimit: Int) extends Actor {
+private[untyped] final class WalletAggregate(id: WalletId, receiveTimeout: FiniteDuration, requestsLimit: Int)
+    extends Actor {
 
   context.setReceiveTimeout(receiveTimeout)
 
@@ -33,21 +34,21 @@ final class WalletAggregate(receiveTimeout: FiniteDuration, requestsLimit: Int) 
       requests: Vector[RequestRequest],
       subscribers: Vector[ActorRef]
   ): Receive = {
-    case GetBalanceRequest(id) if id == getWallet(maybeWallet).id =>
+    case GetBalanceRequest(_, walletId) if walletId == id =>
       sender() ! GetBalanceResponse(getWallet(maybeWallet).balance)
 
-    case AddSubscribers(s) =>
+    case AddSubscribers(_, walletId, s) if walletId == id =>
       context.become(onMessage(maybeWallet, requests, subscribers ++ s))
 
-    case CreateWalletRequest(walletId) =>
+    case CreateWalletRequest(_, walletId) if walletId == id =>
       if (maybeWallet.isEmpty)
         sender() ! CreateWalletSucceeded
       else
         sender() ! CreateWalletFailed("Already created")
-      fireEvent(subscribers)(WalletCreated(walletId))
-      context.become(onMessage(Some(Wallet(walletId, Balance(Money.zero))), requests, subscribers))
+      fireEvent(subscribers)(WalletCreated(id))
+      context.become(onMessage(Some(Wallet(id, Balance(Money.zero))), requests, subscribers))
 
-    case DepositRequest(walletId, money, instant) if walletId == getWallet(maybeWallet).id =>
+    case DepositRequest(_, walletId, money, instant) if walletId == getWallet(maybeWallet).id =>
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.add(money) < Balance.zero)
         sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
@@ -62,8 +63,8 @@ final class WalletAggregate(receiveTimeout: FiniteDuration, requestsLimit: Int) 
         )
       )
 
-    case PayRequest(walletId, money, requestId, instant)
-        if walletId == getWallet(maybeWallet).id && requestId.fold(true)(requests.contains) =>
+    case PayRequest(_, walletId, money, requestId, instant)
+        if walletId == id && requestId.fold(true)(requests.contains) =>
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.sub(money) < Balance.zero)
         sender() ! PayFailed("Can not trade because the balance after trading is less than 0")
@@ -78,12 +79,12 @@ final class WalletAggregate(receiveTimeout: FiniteDuration, requestsLimit: Int) 
         )
       )
 
-    case rr @ RequestRequest(id, walletId, money, instant) if walletId == getWallet(maybeWallet).id =>
+    case rr @ RequestRequest(_, requestId, walletId, money, instant) if walletId == id =>
       if (requests.size > requestsLimit)
         sender() ! RequestFailed("Limit over")
       else
         sender() ! RequestSucceeded
-      fireEvent(subscribers)(WalletRequested(id, walletId, money, instant))
+      fireEvent(subscribers)(WalletRequested(requestId, walletId, money, instant))
       context.become(
         onMessage(
           maybeWallet,
@@ -91,6 +92,9 @@ final class WalletAggregate(receiveTimeout: FiniteDuration, requestsLimit: Int) 
           subscribers
         )
       )
+
+    case Shutdown(_, walletId) if walletId == id =>
+      context.stop(self)
   }
 
 }
