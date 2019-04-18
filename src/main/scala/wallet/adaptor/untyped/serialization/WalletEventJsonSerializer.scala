@@ -1,8 +1,9 @@
-package wallet.adaptor.serialization
+package wallet.adaptor.untyped.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import akka.serialization.SerializerWithStringManifest
+import wallet.adaptor.serialization.CirceJsonSerialization
 import wallet.adaptor.untyped.WalletProtocol.{ WalletCharged, WalletCreated, WalletDeposited, WalletPayed }
 import wallet.adaptor.untyped.json.{ WalletCreatedJson, WalletDepositedJson, WalletPayedJson }
 

@@ -65,7 +65,7 @@ object WalletProtocol {
 
   sealed trait ChargeResponse extends CommandResponse
 
-  case object ChargeSucceeded$ extends ChargeResponse
+  case object ChargeSucceeded extends ChargeResponse
 
   case class ChargeFailed(message: String) extends ChargeResponse
 
