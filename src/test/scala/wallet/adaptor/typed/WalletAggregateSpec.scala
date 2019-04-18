@@ -19,7 +19,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       val walletRef                 = spawn(WalletAggregate.behavior(walletId))
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
 
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
     }
     "addSubscribers" in {
@@ -29,7 +29,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
 
       val probe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(probe.ref))
       probe.expectMessage(CreateWalletSucceeded)
       eventProbes.foreach { eventProbe =>
         eventProbe.expectMessageType[WalletCreated].walletId shouldBe walletId
@@ -40,7 +40,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       val walletRef = spawn(WalletAggregate.behavior(walletId))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val money               = Money(BigDecimal(100))
@@ -53,7 +53,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       val walletRef = spawn(WalletAggregate.behavior(walletId))
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val requestId           = newULID

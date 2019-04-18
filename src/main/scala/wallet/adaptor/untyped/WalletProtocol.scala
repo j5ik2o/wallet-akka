@@ -9,16 +9,18 @@ import wallet.{ CommandId, RequestId, WalletId }
 object WalletProtocol {
 
   sealed trait Message
-  sealed trait Event   extends Message
-  sealed trait Command extends Message
-  sealed trait CommandRequest extends Command {
-    val id: CommandId
-    val walletId: WalletId
+  sealed trait Event extends Message {
+    def occurredAt: Instant
   }
-  sealed trait CommandResponse extends Command
+  sealed trait CommandMessage extends Message
+  sealed trait CommandRequest extends CommandMessage {
+    def id: CommandId
+    def walletId: WalletId
+  }
+  sealed trait CommandResponse extends CommandMessage
 
   // 作成
-  case class CreateWalletRequest(id: CommandId, walletId: WalletId) extends CommandRequest
+  case class CreateWalletRequest(id: CommandId, walletId: WalletId, createdAt: Instant) extends CommandRequest
 
   sealed trait CreateWalletResponse extends CommandResponse
 
@@ -26,7 +28,7 @@ object WalletProtocol {
 
   case class CreateWalletFailed(message: String) extends CreateWalletResponse
 
-  case class WalletCreated(walletId: WalletId) extends Event
+  case class WalletCreated(walletId: WalletId, occurredAt: Instant) extends Event
 
   // 入金
   case class DepositRequest(id: CommandId, walletId: WalletId, money: Money, createdAt: Instant) extends CommandRequest
@@ -37,7 +39,7 @@ object WalletProtocol {
 
   case class DepositFailed(message: String) extends DepositResponse
 
-  case class WalletDeposited(walletId: WalletId, money: Money, createdAt: Instant) extends Event
+  case class WalletDeposited(walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 支払い
   case class PayRequest(
@@ -54,7 +56,7 @@ object WalletProtocol {
 
   case class PayFailed(message: String) extends PayResponse
 
-  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[RequestId], createdAt: Instant)
+  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[RequestId], occurredAt: Instant)
       extends Event
 
   // 請求
@@ -67,7 +69,7 @@ object WalletProtocol {
 
   case class RequestFailed(message: String) extends RequestResponse
 
-  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, createdAt: Instant) extends Event
+  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId) extends CommandRequest

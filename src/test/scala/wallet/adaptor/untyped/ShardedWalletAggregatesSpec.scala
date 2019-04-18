@@ -1,5 +1,7 @@
 package wallet.adaptor.untyped
 
+import java.time.Instant
+
 import akka.cluster.{ Cluster, MemberStatus }
 import wallet.adaptor.untyped.WalletProtocol.{ CreateWalletRequest, CreateWalletSucceeded }
 import wallet.newULID
@@ -33,7 +35,7 @@ class ShardedWalletAggregatesSpec extends AkkaSpec("""
       val regionRef = ShardedWalletAggregatesRegion.shardRegion
 
       val walletId = newULID
-      regionRef ! CreateWalletRequest(newULID, walletId)
+      regionRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
     }
   }

@@ -35,12 +35,12 @@ object WalletAggregate {
           case AddSubscribers(_, walletId, s) if walletId == id =>
             onMessage(maybeWallet, requests, subscribers ++ s)
 
-          case CreateWalletRequest(_, walletId, replyTo) =>
+          case CreateWalletRequest(_, walletId, createdAt, replyTo) =>
             if (maybeWallet.isEmpty)
               replyTo.foreach(_ ! CreateWalletSucceeded)
             else
               replyTo.foreach(_ ! CreateWalletFailed("Already created"))
-            fireEventToSubscribers(WalletCreated(walletId))
+            fireEventToSubscribers(WalletCreated(walletId, createdAt))
             onMessage(Some(Wallet(walletId, Balance(Money.zero))), requests, subscribers)
 
           case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>

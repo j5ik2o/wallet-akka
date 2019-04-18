@@ -37,13 +37,13 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       log.debug(s"message = $m")
       context.become(onMessage(maybeWallet, requests, subscribers ++ s))
 
-    case m @ CreateWalletRequest(_, walletId) if walletId == id =>
+    case m @ CreateWalletRequest(_, walletId, createdAt) if walletId == id =>
       log.debug(s"message = $m")
       if (maybeWallet.isEmpty)
         sender() ! CreateWalletSucceeded
       else
         sender() ! CreateWalletFailed("Already created")
-      fireEvent(subscribers)(WalletCreated(id))
+      fireEvent(subscribers)(WalletCreated(walletId, createdAt))
       context.become(onMessage(Some(Wallet(id, Balance(Money.zero))), requests, subscribers))
 
     case m @ DepositRequest(_, walletId, money, instant) if walletId == id =>

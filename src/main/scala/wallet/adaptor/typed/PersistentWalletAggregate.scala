@@ -13,16 +13,16 @@ object PersistentWalletAggregate {
   private val eventHandler: (State, Event) => State = { (state, event) =>
     event match {
       case e: WalletCreated =>
-        state.childRef ! CreateWalletRequest(newULID, e.walletId)
+        state.childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt)
         state
       case e: WalletDeposited =>
-        state.childRef ! DepositRequest(newULID, e.walletId, e.money, e.createdAt)
+        state.childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt)
         state
       case e: WalletRequested =>
-        state.childRef ! RequestRequest(newULID, e.requestId, e.walletId, e.money, e.createdAt)
+        state.childRef ! RequestRequest(newULID, e.requestId, e.walletId, e.money, e.occurredAt)
         state
       case e: WalletPayed =>
-        state.childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.createdAt)
+        state.childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.occurredAt)
         state
     }
   }
@@ -32,7 +32,7 @@ object PersistentWalletAggregate {
     command match {
       case m: CreateWalletRequest =>
         state.childRef ! m
-        Effect.persist(WalletCreated(m.walletId))
+        Effect.persist(WalletCreated(m.walletId, m.createdAt))
       case m: DepositRequest =>
         state.childRef ! m
         Effect.persist(WalletDeposited(m.walletId, m.money, m.createdAt))

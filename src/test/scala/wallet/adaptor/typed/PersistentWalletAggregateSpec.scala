@@ -35,7 +35,7 @@ class PersistentWalletAggregateSpec
         val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
         val depositResponseProbe = TestProbe[DepositResponse]
@@ -62,7 +62,7 @@ class PersistentWalletAggregateSpec
         val walletRef = spawn(WalletAggregates.behavior()(PersistentWalletAggregate.behavior))
 
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
         val depositResponseProbe = TestProbe[DepositResponse]

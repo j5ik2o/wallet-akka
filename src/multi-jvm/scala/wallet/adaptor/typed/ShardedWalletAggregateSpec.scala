@@ -59,7 +59,7 @@ class ShardedWalletAggregateSpec
         val walletId                  = newULID
         val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
         val depositResponseProbe = TestProbe[DepositResponse]
@@ -77,7 +77,7 @@ class ShardedWalletAggregateSpec
         val walletId                  = newULID
         val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
         val depositResponseProbe = TestProbe[DepositResponse]

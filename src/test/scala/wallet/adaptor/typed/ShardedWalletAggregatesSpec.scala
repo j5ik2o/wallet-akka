@@ -1,5 +1,7 @@
 package wallet.adaptor.typed
 
+import java.time.Instant
+
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorSystem
 import akka.cluster.MemberStatus
@@ -45,7 +47,7 @@ class ShardedWalletAggregatesSpec
       val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
       val walletId  = newULID
       val walletRef = clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(probe.ref))
       probe.expectMessage(CreateWalletSucceeded)
     }
   }

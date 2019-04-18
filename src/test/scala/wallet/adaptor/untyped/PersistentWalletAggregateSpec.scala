@@ -22,7 +22,7 @@ class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
         // 永続化アクターを起動
         val walletRef = system.actorOf(PersistentWalletAggregate.props(walletId))
 
-        walletRef ! CreateWalletRequest(newULID, walletId)
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
 
         val money = Money(BigDecimal(100))
@@ -47,7 +47,7 @@ class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
         // 永続化アクターを起動
         val walletRef = system.actorOf(WalletAggregates.props()(PersistentWalletAggregate.props))
 
-        walletRef ! CreateWalletRequest(newULID, walletId)
+        walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
 
         val money = Money(BigDecimal(100))

@@ -9,18 +9,21 @@ import wallet.{ CommandId, RequestId, WalletId }
 object WalletProtocol {
 
   sealed trait Message
-  sealed trait Event   extends Message
-  sealed trait Command extends Message
-  sealed trait CommandRequest extends Command {
+  sealed trait Event extends Message {
+    def occurredAt: Instant
+  }
+  sealed trait CommandMessage extends Message
+  sealed trait CommandRequest extends CommandMessage {
     def id: CommandId
     def walletId: WalletId
   }
-  sealed trait CommandResponse extends Command
+  sealed trait CommandResponse extends CommandMessage
 
   // ウォレットの作成
   case class CreateWalletRequest(
       id: CommandId,
       walletId: WalletId,
+      createdAt: Instant,
       replyTo: Option[ActorRef[CreateWalletResponse]] = None
   ) extends CommandRequest
 
@@ -30,7 +33,7 @@ object WalletProtocol {
 
   case class CreateWalletFailed(message: String) extends CreateWalletResponse
 
-  case class WalletCreated(walletId: WalletId) extends Event
+  case class WalletCreated(walletId: WalletId, occurredAt: Instant) extends Event
 
   // 入金
   case class DepositRequest(
@@ -47,7 +50,7 @@ object WalletProtocol {
 
   case class DepositFailed(message: String) extends DepositResponse
 
-  case class WalletDeposited(walletId: WalletId, money: Money, createdAt: Instant) extends Event
+  case class WalletDeposited(walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 支払い
   case class PayRequest(
@@ -65,7 +68,7 @@ object WalletProtocol {
 
   case class PayFailed(message: String) extends PayResponse
 
-  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[RequestId], createdAt: Instant)
+  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[RequestId], occurredAt: Instant)
       extends Event
 
   // 請求
@@ -84,7 +87,7 @@ object WalletProtocol {
 
   case class RequestFailed(message: String) extends RequestResponse
 
-  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, createdAt: Instant) extends Event
+  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId, replyTo: ActorRef[GetBalanceResponse])

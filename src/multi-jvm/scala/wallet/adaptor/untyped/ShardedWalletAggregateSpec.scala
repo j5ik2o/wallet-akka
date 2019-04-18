@@ -1,5 +1,7 @@
 package wallet.adaptor.untyped
 
+import java.time.Instant
+
 import akka.actor.{ ActorIdentity, Identify, Props }
 import akka.cluster.Cluster
 import akka.persistence.Persistence
@@ -51,14 +53,14 @@ class ShardedWalletAggregateSpec
       runOn(node1) {
         val region   = ShardedWalletAggregatesRegion.shardRegion
         val walletId = newULID
-        region ! CreateWalletRequest(newULID, walletId)
+        region ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
       }
       enterBarrier("after-3")
       runOn(node2) {
         val region   = ShardedWalletAggregatesRegion.shardRegion
         val walletId = newULID
-        region ! CreateWalletRequest(newULID, walletId)
+        region ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
       }
       enterBarrier("after-4")
