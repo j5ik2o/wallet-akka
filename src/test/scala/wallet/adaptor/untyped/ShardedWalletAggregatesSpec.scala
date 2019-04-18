@@ -31,7 +31,7 @@ class ShardedWalletAggregatesSpec
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender
-    with ActorTestSupport {
+    with ActorSpecSupport {
 
   val cluster = Cluster(system)
 

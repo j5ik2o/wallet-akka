@@ -3,7 +3,7 @@ package wallet.adaptor.untyped
 import akka.actor.ActorRef
 import akka.testkit.TestKit
 
-trait ActorTestSupport { this: TestKit =>
+trait ActorSpecSupport { this: TestKit =>
 
   def killActors(actors: ActorRef*): Unit = {
     actors.foreach { actor =>

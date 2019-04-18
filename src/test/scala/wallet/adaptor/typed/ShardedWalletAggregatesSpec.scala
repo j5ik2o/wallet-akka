@@ -30,7 +30,7 @@ class ShardedWalletAggregatesSpec
     )
     with FreeSpecLike
     with Matchers
-    with ActorTestSupport {
+    with ActorSpecSupport {
 
   def typedSystem[T]: ActorSystem[T] = system.asInstanceOf[ActorSystem[T]]
 

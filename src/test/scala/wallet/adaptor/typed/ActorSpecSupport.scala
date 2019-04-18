@@ -3,7 +3,7 @@ package wallet.adaptor.typed
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorRef
 
-trait ActorTestSupport {
+trait ActorSpecSupport {
 
   val testKit: ActorTestKit
 

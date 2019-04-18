@@ -15,7 +15,7 @@ class PersistentWalletAggregateSpec
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender
-    with ActorTestSupport
+    with ActorSpecSupport
     with PersistenceCleanup {
 
   override protected def beforeAll(): Unit = deleteStorageLocations()

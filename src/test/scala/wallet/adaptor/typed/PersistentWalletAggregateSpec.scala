@@ -12,7 +12,7 @@ class PersistentWalletAggregateSpec
     extends ScalaTestWithActorTestKit
     with FreeSpecLike
     with Matchers
-    with ActorTestSupport
+    with ActorSpecSupport
     with PersistenceCleanup {
 
   override protected def beforeAll(): Unit = {
