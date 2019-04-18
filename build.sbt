@@ -54,7 +54,7 @@ val root = (project in file("."))
       "com.github.julien-truffaut" %%  "monocle-core"  % monocleVersion,
       "com.github.julien-truffaut" %%  "monocle-macro" % monocleVersion,
       "de.huxhorn.sulky" % "de.huxhorn.sulky.ulid" % "8.2.0",
-      "org.slf4j" % "slf4j-api" % "1.7.26",
+      "org.slf4j" % "slf4j-api" % "1.7.25",
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
