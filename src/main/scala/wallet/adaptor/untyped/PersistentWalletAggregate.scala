@@ -41,8 +41,8 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
       childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt)
     case e: WalletDeposited =>
       childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt)
-    case e: WalletRequested =>
-      childRef ! RequestRequest(newULID, e.requestId, e.walletId, e.money, e.occurredAt)
+    case e: WalletCharged =>
+      childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt)
     case e: WalletPayed =>
       childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.occurredAt)
     case RecoveryCompleted =>
@@ -61,8 +61,8 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
       persist(WalletDeposited(m.walletId, m.money, m.createdAt)) { _ =>
         childRef forward m
       }
-    case m: RequestRequest =>
-      persist(WalletRequested(m.requestId, m.walletId, m.money, m.createdAt)) { _ =>
+    case m: ChargeRequest =>
+      persist(WalletCharged(m.requestId, m.walletId, m.money, m.createdAt)) { _ =>
         childRef forward m
       }
     case m: PayRequest =>

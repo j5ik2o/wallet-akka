@@ -35,7 +35,7 @@ class WalletAggregateSpec extends AkkaSpec {
       expectMsg(DepositSucceeded)
     }
     // 請求
-    "request" in {
+    "charge" in {
       val walletId  = newULID
       val walletRef = system.actorOf(WalletAggregate.props(walletId))
 
@@ -44,8 +44,8 @@ class WalletAggregateSpec extends AkkaSpec {
 
       val requestId = newULID
       val money     = Money(BigDecimal(100))
-      walletRef ! RequestRequest(newULID, requestId, walletId, money, Instant.now)
-      expectMsg(RequestSucceeded)
+      walletRef ! ChargeRequest(newULID, requestId, walletId, money, Instant.now)
+      expectMsg(ChargeSucceeded$)
     }
     // TODO: 支払い
     // TODO: 取引履歴の確認

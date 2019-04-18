@@ -23,7 +23,7 @@ object WalletAggregate {
     Behaviors.setup[CommandRequest] { ctx =>
       def onMessage(
           maybeWallet: Option[Wallet],
-          requests: Vector[RequestRequest],
+          requests: Vector[ChargeRequest],
           subscribers: Vector[ActorRef[Event]]
       ): Behaviors.Receive[CommandRequest] = {
         val fireEventToSubscribers = fireEvent(subscribers) _
@@ -70,11 +70,11 @@ object WalletAggregate {
               subscribers
             )
 
-          case rr @ RequestRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
+          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
             if (requests.size > requestsLimit)
-              replyTo.foreach(_ ! RequestFailed("Limit over"))
+              replyTo.foreach(_ ! ChargeFailed("Limit over"))
             else
-              replyTo.foreach(_ ! RequestSucceeded)
+              replyTo.foreach(_ ! ChargeSucceeded$)
             fireEventToSubscribers(WalletRequested(questId, walletId, money, instant))
             onMessage(
               maybeWallet,

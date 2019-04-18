@@ -4,7 +4,7 @@ import java.time.Instant
 
 import akka.actor.typed.ActorRef
 import wallet.domain.{ Balance, Money }
-import wallet.{ CommandId, RequestId, WalletId }
+import wallet.{ ChargeId, CommandId, WalletId }
 
 object WalletProtocol {
 
@@ -57,7 +57,7 @@ object WalletProtocol {
       id: CommandId,
       walletId: WalletId,
       money: Money,
-      requestId: Option[RequestId],
+      requestId: Option[ChargeId],
       createdAt: Instant,
       replyTo: Option[ActorRef[PayResponse]] = None
   ) extends CommandRequest
@@ -68,26 +68,26 @@ object WalletProtocol {
 
   case class PayFailed(message: String) extends PayResponse
 
-  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[RequestId], occurredAt: Instant)
+  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[ChargeId], occurredAt: Instant)
       extends Event
 
   // 請求
-  case class RequestRequest(
+  case class ChargeRequest(
       id: CommandId,
-      requestId: RequestId,
+      requestId: ChargeId,
       walletId: WalletId,
       money: Money,
       createdAt: Instant,
-      replyTo: Option[ActorRef[RequestResponse]] = None
+      replyTo: Option[ActorRef[ChargeResponse]] = None
   ) extends CommandRequest
 
-  sealed trait RequestResponse extends CommandResponse
+  sealed trait ChargeResponse extends CommandResponse
 
-  case object RequestSucceeded extends RequestResponse
+  case object ChargeSucceeded$ extends ChargeResponse
 
-  case class RequestFailed(message: String) extends RequestResponse
+  case class ChargeFailed(message: String) extends ChargeResponse
 
-  case class WalletRequested(requestId: RequestId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
+  case class WalletRequested(chargeId: ChargeId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId, replyTo: ActorRef[GetBalanceResponse])
