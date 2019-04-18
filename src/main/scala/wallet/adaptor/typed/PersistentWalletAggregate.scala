@@ -50,9 +50,11 @@ object PersistentWalletAggregate {
 
   case class State(childRef: ActorRef[CommandRequest])
 
+  def behavior(id: WalletId): Behavior[CommandRequest] = behavior(id, Int.MaxValue)
+
   def behavior(
       id: WalletId,
-      requestsLimit: Int = Int.MaxValue
+      requestsLimit: Int
   ): Behavior[CommandRequest] =
     Behaviors
       .supervise(Behaviors.setup[CommandRequest] { context =>

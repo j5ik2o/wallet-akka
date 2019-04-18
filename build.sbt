@@ -34,8 +34,10 @@ val root = (project in file("."))
       "commons-io" % "commons-io" % "2.4" % Test,
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Test
     ),
+    wartremoverErrors in (Compile, compile) ++= Seq(Wart.ArrayEquals, Wart.AnyVal, Wart.Var, Wart.Null, Wart.OptionPartial),
     parallelExecution in Test := false,
     fork := true,
+    // --- sbt-multi-jvm用の設定
     compile in MultiJvm := (compile in MultiJvm).triggeredBy(compile in Test).value,
     executeTests in Test := Def.task {
       val testResults = (executeTests in Test).value
@@ -57,8 +59,8 @@ val root = (project in file("."))
       case x =>
         val old = (assemblyMergeStrategy in(MultiJvm, assembly)).value
         old(x)
-    },
-    logLevel := Level.Debug
+    }
+    //, logLevel := Level.Debug
   )
   .enablePlugins(MultiJvmPlugin)
   .configs(MultiJvm)

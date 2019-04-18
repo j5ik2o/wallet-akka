@@ -40,23 +40,23 @@ class ShardedWalletAggregateSpec
     }
     "join cluster" in within(15 seconds) {
       join(node1, node1) {
-        ShardedWalletAggregatesRegion.startClusterSharding(system)(10)
+        ShardedWalletAggregatesRegion.startClusterSharding(10)
       }
       join(node2, node1) {
-        ShardedWalletAggregatesRegion.startClusterSharding(system)(10)
+        ShardedWalletAggregatesRegion.startClusterSharding(10)
       }
       enterBarrier("after-2")
     }
     "createWallet" in {
       runOn(node1) {
-        val region   = ShardedWalletAggregatesRegion.getShardRegion(system)
+        val region   = ShardedWalletAggregatesRegion.shardRegion
         val walletId = newULID
         region ! CreateWalletRequest(newULID, walletId)
         expectMsg(CreateWalletSucceeded)
       }
       enterBarrier("after-3")
       runOn(node2) {
-        val region   = ShardedWalletAggregatesRegion.getShardRegion(system)
+        val region   = ShardedWalletAggregatesRegion.shardRegion
         val walletId = newULID
         region ! CreateWalletRequest(newULID, walletId)
         expectMsg(CreateWalletSucceeded)

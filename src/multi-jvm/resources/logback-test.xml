@@ -27,9 +27,9 @@
     <logger name="akka.persistence.stream" level="DEBUG"/>
     <logger name="akka.persistence.jdbc" level="DEBUG"/>
 
-    <logger name="com.github.j5ik2o" level="DEBUG"/>
+    <logger name="wallet" level="DEBUG"/>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="ASYNCSTDOUT" />
     </root>
 

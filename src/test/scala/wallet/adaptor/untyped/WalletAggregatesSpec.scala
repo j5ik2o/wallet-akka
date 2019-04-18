@@ -2,23 +2,12 @@ package wallet.adaptor.untyped
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
-import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
-import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
+import akka.testkit.TestProbe
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
 
-class WalletAggregatesSpec
-    extends TestKit(ActorSystem("WalletAggregatesSpec"))
-    with FreeSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ImplicitSender {
-
-  override def afterAll: Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
+class WalletAggregatesSpec extends AkkaSpec {
 
   "WalletAggregate" - {
     "create" in {

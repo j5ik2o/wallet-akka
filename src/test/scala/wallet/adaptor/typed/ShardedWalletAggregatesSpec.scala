@@ -1,36 +1,32 @@
 package wallet.adaptor.typed
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorSystem
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.typed.{ Cluster, Join }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.{ FreeSpecLike, Matchers }
+import org.scalatest.FreeSpecLike
 import wallet.adaptor.typed.WalletProtocol.{ CreateWalletRequest, CreateWalletResponse, CreateWalletSucceeded }
 import wallet.newULID
 
 import scala.concurrent.duration._
 
+/**
+  * クラスターシャーディングの単体テスト。
+  */
 class ShardedWalletAggregatesSpec
-    extends ScalaTestWithActorTestKit(
-      ActorTestKit(
-        "ShardedWalletAggregatesSpec",
-        ConfigFactory.parseString("""
-                                                                                                              |akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
-                                                                                                              |akka.loglevel = "DEBUG"
-                                                                                                              |akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
-                                                                                                              |akka.actor.debug.receive = on
-                                                                                                              |
-                                                                                                              |akka.actor.provider = cluster
-                                                                                                              |
-                                                                                                              |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-                                                                                                              |passivate-timeout = 60 seconds
+    extends ScalaTestWithActorTestKit("""
+                                    |akka.loglevel = DEBUG
+                                    |akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
+                                    |akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
+                                    |akka.actor.debug.receive = on
+                                    |
+                                    |akka.actor.provider = cluster
+                                    |
+                                    |akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+                                    |passivate-timeout = 60 seconds
       """.stripMargin)
-      )
-    )
     with FreeSpecLike
-    with Matchers
     with ActorSpecSupport {
 
   def typedSystem[T]: ActorSystem[T] = system.asInstanceOf[ActorSystem[T]]

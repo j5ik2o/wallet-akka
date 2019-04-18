@@ -2,28 +2,18 @@ package wallet.adaptor.untyped
 
 import java.time.Instant
 
-import akka.actor.ActorSystem
-import akka.testkit.{ ImplicitSender, TestKit }
-import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
 
-class PersistentWalletAggregateSpec
-    extends TestKit(ActorSystem("PersistentWalletAggregateSpec"))
-    with FreeSpecLike
-    with Matchers
-    with BeforeAndAfterAll
-    with ImplicitSender
-    with ActorSpecSupport
-    with PersistenceCleanup {
+/**
+  * PesistentActorの単体テスト。
+  */
+class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
 
-  override protected def beforeAll(): Unit = deleteStorageLocations()
+  override protected def atStartup(): Unit = deleteStorageLocations()
 
-  override protected def afterAll(): Unit = {
-    deleteStorageLocations()
-    TestKit.shutdownActorSystem(system)
-  }
+  override protected def beforeTermination(): Unit = deleteStorageLocations()
 
   "PersistentWalletAggregate" - {
     "directly" - {

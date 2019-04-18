@@ -3,15 +3,17 @@ package wallet.adaptor.typed
 import java.time.Instant
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import org.scalatest.{ FreeSpecLike, Matchers }
+import org.scalatest.FreeSpecLike
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.Money
 
+/**
+  * PesistentActorの単体テスト。
+  */
 class PersistentWalletAggregateSpec
     extends ScalaTestWithActorTestKit
     with FreeSpecLike
-    with Matchers
     with ActorSpecSupport
     with PersistenceCleanup {
 
