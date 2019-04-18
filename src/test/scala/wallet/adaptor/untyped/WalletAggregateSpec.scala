@@ -5,7 +5,7 @@ import java.time.Instant
 import akka.testkit.TestProbe
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{Balance, Money}
+import wallet.domain.{ Balance, Money }
 
 /**
   * Wallet集約アクターの単体テスト。
@@ -60,7 +60,7 @@ class WalletAggregateSpec extends AkkaSpec {
       val requestId = newULID
       val money     = Money(BigDecimal(100))
       walletRef ! ChargeRequest(newULID, requestId, walletId, money, Instant.now)
-      expectMsg(ChargeSucceeded$)
+      expectMsg(ChargeSucceeded)
     }
     // TODO: 支払い
     // TODO: 取引履歴の確認

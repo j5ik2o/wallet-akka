@@ -10,7 +10,7 @@ import scala.concurrent.duration.FiniteDuration
 
 object ShardedWalletAggregates {
 
-  val TypeKey = EntityTypeKey[CommandRequest]("wallets")
+  val TypeKey: EntityTypeKey[CommandRequest] = EntityTypeKey[CommandRequest]("wallets")
 
   def initClusterSharding(
       clusterSharding: ClusterSharding,
@@ -37,7 +37,6 @@ object ShardedWalletAggregates {
                   case Stop =>
                     Behaviors.stopped
                   case msg =>
-                    ctx.log.debug(s"msg = $msg")
                     childRef ! msg
                     Behaviors.same
                 }

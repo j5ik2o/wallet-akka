@@ -84,7 +84,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       if (requests.size > requestsLimit)
         sender() ! ChargeFailed("Limit over")
       else
-        sender() ! ChargeSucceeded$
+        sender() ! ChargeSucceeded
       fireEvent(subscribers)(WalletCharged(requestId, walletId, money, instant))
       context.become(
         onMessage(
