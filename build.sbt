@@ -22,6 +22,7 @@ val root = (project in file("."))
       "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion,
       "com.typesafe.akka" %% "akka-cluster-sharding-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+      "org.slf4j" % "slf4j-api" % "1.7.26",
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
@@ -30,7 +31,8 @@ val root = (project in file("."))
       "org.scalatest" %% "scalatest" % "3.0.4" % Test,
       "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % Test,
       "org.iq80.leveldb" % "leveldb" % "0.9" % Test,
-      "commons-io" % "commons-io" % "2.4" % Test
+      "commons-io" % "commons-io" % "2.4" % Test,
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Test
     ),
     parallelExecution in Test := false,
     fork := true,

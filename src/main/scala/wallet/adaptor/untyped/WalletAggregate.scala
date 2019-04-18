@@ -5,8 +5,6 @@ import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.{ Balance, Money, Wallet }
 
-import scala.concurrent.duration.FiniteDuration
-
 object WalletAggregate {
 
   def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
@@ -32,12 +30,15 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       subscribers: Vector[ActorRef]
   ): Receive = {
     case m @ GetBalanceRequest(_, walletId) if walletId == id =>
+      log.debug(s"message = $m")
       sender() ! GetBalanceResponse(getWallet(maybeWallet).balance)
 
-    case AddSubscribers(_, walletId, s) if walletId == id =>
+    case m @ AddSubscribers(_, walletId, s) if walletId == id =>
+      log.debug(s"message = $m")
       context.become(onMessage(maybeWallet, requests, subscribers ++ s))
 
     case m @ CreateWalletRequest(_, walletId) if walletId == id =>
+      log.debug(s"message = $m")
       if (maybeWallet.isEmpty)
         sender() ! CreateWalletSucceeded
       else
@@ -46,6 +47,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       context.become(onMessage(Some(Wallet(id, Balance(Money.zero))), requests, subscribers))
 
     case m @ DepositRequest(_, walletId, money, instant) if walletId == id =>
+      log.debug(s"message = $m")
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.add(money) < Balance.zero)
         sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
@@ -62,6 +64,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
 
     case m @ PayRequest(_, walletId, money, requestId, instant)
         if walletId == id && requestId.fold(true)(requests.contains) =>
+      log.debug(s"message = $m")
       val currentBalance = getWallet(maybeWallet).balance
       if (currentBalance.sub(money) < Balance.zero)
         sender() ! PayFailed("Can not trade because the balance after trading is less than 0")
@@ -77,6 +80,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       )
 
     case rr @ RequestRequest(_, requestId, walletId, money, instant) if walletId == id =>
+      log.debug(s"message = $rr")
       if (requests.size > requestsLimit)
         sender() ! RequestFailed("Limit over")
       else
@@ -90,7 +94,8 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
         )
       )
 
-    case Shutdown(_, walletId) if walletId == id =>
+    case m @ Shutdown(_, walletId) if walletId == id =>
+      log.debug(s"message = $m")
       context.stop(self)
   }
 

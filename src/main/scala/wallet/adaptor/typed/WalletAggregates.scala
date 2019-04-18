@@ -29,7 +29,6 @@ object WalletAggregates {
     }
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage[CommandRequest] { msg =>
-        println(msg)
         createAndSend(ctx, msg.walletId) ! msg
         Behaviors.same
       }

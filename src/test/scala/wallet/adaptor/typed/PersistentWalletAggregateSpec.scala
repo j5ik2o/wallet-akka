@@ -26,32 +26,59 @@ class PersistentWalletAggregateSpec
   }
 
   "PersistentWalletAggregate" - {
-    "deposit" in {
-      val walletId = newULID
-      // 永続化アクターを起動
-      val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+    "directly" - {
+      "deposit" in {
+        val walletId = newULID
+        // 永続化アクターを起動
+        val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
-      val createWalletResponseProbe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
-      createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
+        val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
-      val depositResponseProbe = TestProbe[DepositResponse]
-      val money                = Money(BigDecimal(100))
-      walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
-      depositResponseProbe.expectMessage(DepositSucceeded)
+        val depositResponseProbe = TestProbe[DepositResponse]
+        val money                = Money(BigDecimal(100))
+        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        depositResponseProbe.expectMessage(DepositSucceeded)
 
-      // アクターを停止する
-      killActors(walletRef)
+        // アクターを停止する
+        killActors(walletRef)
 
-      // 状態を復元する
-      val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+        // 状態を復元する
+        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
-      val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
-      expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
-      getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
-
+        val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+        expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+        getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
+      }
     }
     // TODO: 子アクターが例外を発生した場合に、永続化アクターが停止すること
+    "via WalletAggregates" - {
+      "deposit" in {
+        val walletId = newULID
+        // 永続化アクターを起動
+        val walletRef = spawn(WalletAggregates.behavior()(PersistentWalletAggregate.behavior))
+
+        val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
+
+        val depositResponseProbe = TestProbe[DepositResponse]
+        val money                = Money(BigDecimal(100))
+        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        depositResponseProbe.expectMessage(DepositSucceeded)
+
+        // アクターを停止する
+        killActors(walletRef)
+
+        // 状態を復元する
+        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+
+        val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+        expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+        getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
+      }
+    }
   }
 
 }

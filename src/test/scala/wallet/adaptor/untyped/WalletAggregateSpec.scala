@@ -5,11 +5,9 @@ import java.time.Instant
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestKit, TestProbe }
 import org.scalatest._
+import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
 import wallet.domain.Money
-import wallet._
-
-import scala.concurrent.duration._
 
 class WalletAggregateSpec
     extends TestKit(ActorSystem("WalletAggregateSpec"))
