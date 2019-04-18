@@ -3,7 +3,7 @@ package wallet.adaptor.serialization
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import akka.serialization.SerializerWithStringManifest
-import wallet.adaptor.untyped.WalletProtocol.{ WalletCreated, WalletDeposited, WalletPayed, WalletRequested }
+import wallet.adaptor.untyped.WalletProtocol.{ WalletCharged, WalletCreated, WalletDeposited, WalletPayed }
 import wallet.adaptor.untyped.json.{ WalletCreatedJson, WalletDepositedJson, WalletPayedJson }
 
 class WalletEventJsonSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -14,7 +14,7 @@ class WalletEventJsonSerializer(system: ExtendedActorSystem) extends SerializerW
   import wallet.adaptor.untyped.json.WalletRequestedJson._
   final val WalletCreatedManifest   = classOf[WalletCreated].getName
   final val WalletDepositedManifest = classOf[WalletDeposited].getName
-  final val WalletRequestedManifest = classOf[WalletRequested].getName
+  final val WalletRequestedManifest = classOf[WalletCharged].getName
   final val WalletPayedManifest     = classOf[WalletPayed].getName
 
   private implicit val log: LoggingAdapter = Logging.getLogger(system, getClass)
@@ -26,7 +26,7 @@ class WalletEventJsonSerializer(system: ExtendedActorSystem) extends SerializerW
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case e: WalletCreated   => CirceJsonSerialization.toBinary(e, log.isDebugEnabled)
     case e: WalletDeposited => CirceJsonSerialization.toBinary(e, log.isDebugEnabled)
-    case e: WalletRequested => CirceJsonSerialization.toBinary(e, log.isDebugEnabled)
+    case e: WalletCharged   => CirceJsonSerialization.toBinary(e, log.isDebugEnabled)
     case e: WalletPayed     => CirceJsonSerialization.toBinary(e, log.isDebugEnabled)
     case x                  => throw new NotImplementedError(s"Cannot serialize: ${x.toString}")
   }

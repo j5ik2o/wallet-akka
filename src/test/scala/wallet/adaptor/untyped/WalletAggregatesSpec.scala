@@ -41,7 +41,7 @@ class WalletAggregatesSpec extends AkkaSpec {
       walletRef ! DepositRequest(newULID, walletId, money, Instant.now)
       expectMsg(DepositSucceeded)
     }
-    "request" in {
+    "charge" in {
       val walletRef = system.actorOf(WalletAggregates.props()(WalletAggregate.props))
       val walletId  = newULID
 
@@ -50,8 +50,8 @@ class WalletAggregatesSpec extends AkkaSpec {
 
       val requestId = newULID
       val money     = Money(BigDecimal(100))
-      walletRef ! RequestRequest(newULID, requestId, walletId, money, Instant.now)
-      expectMsg(RequestSucceeded)
+      walletRef ! ChargeRequest(newULID, requestId, walletId, money, Instant.now)
+      expectMsg(ChargeSucceeded$)
     }
   }
 }

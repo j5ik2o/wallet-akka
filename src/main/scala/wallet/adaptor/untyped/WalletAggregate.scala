@@ -26,7 +26,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
 
   private def onMessage(
       maybeWallet: Option[Wallet],
-      requests: Vector[RequestRequest],
+      requests: Vector[ChargeRequest],
       subscribers: Vector[ActorRef]
   ): Receive = {
     case m @ GetBalanceRequest(_, walletId) if walletId == id =>
@@ -79,13 +79,13 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
         )
       )
 
-    case rr @ RequestRequest(_, requestId, walletId, money, instant) if walletId == id =>
+    case rr @ ChargeRequest(_, requestId, walletId, money, instant) if walletId == id =>
       log.debug(s"message = $rr")
       if (requests.size > requestsLimit)
-        sender() ! RequestFailed("Limit over")
+        sender() ! ChargeFailed("Limit over")
       else
-        sender() ! RequestSucceeded
-      fireEvent(subscribers)(WalletRequested(requestId, walletId, money, instant))
+        sender() ! ChargeSucceeded$
+      fireEvent(subscribers)(WalletCharged(requestId, walletId, money, instant))
       context.become(
         onMessage(
           maybeWallet,

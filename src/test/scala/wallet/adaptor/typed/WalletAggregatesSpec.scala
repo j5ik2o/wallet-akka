@@ -46,7 +46,7 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
       walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositRequestProbe.ref))
       depositRequestProbe.expectMessage(DepositSucceeded)
     }
-    "request" in {
+    "charge" in {
       val walletRef = spawn(WalletAggregates.behavior()(WalletAggregate.behavior))
 
       val walletId                  = newULID
@@ -56,9 +56,9 @@ class WalletAggregatesSpec extends ScalaTestWithActorTestKit with FreeSpecLike w
 
       val requestId           = newULID
       val money               = Money(BigDecimal(100))
-      val requestRequestProbe = TestProbe[RequestResponse]
-      walletRef ! RequestRequest(newULID, requestId, walletId, money, Instant.now, Some(requestRequestProbe.ref))
-      requestRequestProbe.expectMessage(RequestSucceeded)
+      val requestRequestProbe = TestProbe[ChargeResponse]
+      walletRef ! ChargeRequest(newULID, requestId, walletId, money, Instant.now, Some(requestRequestProbe.ref))
+      requestRequestProbe.expectMessage(ChargeSucceeded$)
     }
   }
 
