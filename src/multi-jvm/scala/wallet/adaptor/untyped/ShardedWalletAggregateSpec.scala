@@ -2,16 +2,14 @@ package wallet.adaptor.untyped
 
 import java.time.Instant
 
-import akka.actor.{ ActorIdentity, Identify, Props }
-import akka.cluster.Cluster
+import akka.actor.{ActorIdentity, Identify, Props}
 import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
-import akka.remote.testconductor.RoleName
+import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import wallet._
-import wallet.adaptor.untyped.WalletProtocol.{ CreateWalletRequest, CreateWalletSucceeded }
-import wallet.adaptor.{ MultiNodeSampleConfig, STMultiNodeSpecSupport }
+import wallet.adaptor.untyped.WalletProtocol.{CreateWalletRequest, CreateWalletSucceeded}
+import wallet.adaptor.{MultiNodeSampleConfig, STMultiNodeSpecSupport}
 
 import scala.concurrent.duration._
 
