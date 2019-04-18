@@ -39,6 +39,7 @@ object ShardedWalletAggregates {
                   case Stop =>
                     Behaviors.stopped
                   case msg =>
+                    ctx.log.debug(s"msg = $msg")
                     childRef ! msg
                     Behaviors.same
                 }

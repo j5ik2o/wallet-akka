@@ -8,7 +8,6 @@ import akka.remote.testkit.{ MultiNodeSpec, MultiNodeSpecCallbacks }
 import org.apache.commons.io.FileUtils
 import org.scalatest.{ BeforeAndAfterAll, FreeSpecLike, Matchers }
 import wallet.adaptor.MultiNodeSampleConfig.controller
-import wallet.adaptor.untyped.ShardedWalletAggregatesRegion
 
 trait STMultiNodeSpecSupport extends MultiNodeSpecCallbacks with FreeSpecLike with Matchers with BeforeAndAfterAll {
   this: MultiNodeSpec =>

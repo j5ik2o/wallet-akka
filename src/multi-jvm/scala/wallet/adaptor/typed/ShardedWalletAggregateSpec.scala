@@ -3,7 +3,9 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.actor.{ ActorIdentity, Identify, Props }
+import akka.cluster.Cluster
 import akka.cluster.sharding.typed.ShardingEnvelope
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testkit.MultiNodeSpec
@@ -57,8 +59,9 @@ class ShardedWalletAggregateSpec
     }
     "createWallet" in {
       runOn(node1) {
-        val sharding = ShardedWalletAggregates.newClusterSharding(typedSystem)
+        val sharding: ClusterSharding = ShardedWalletAggregates.newClusterSharding(typedSystem)
         ShardedWalletAggregates.initClusterSharding(sharding, 10, 1 hours)
+
         val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
         val walletId  = newULID
         val entityRef = sharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
