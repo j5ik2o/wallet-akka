@@ -3,6 +3,7 @@ package wallet.adaptor.typed
 import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorSystem
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.typed.{ Cluster, Join }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ FreeSpecLike, Matchers }
@@ -34,7 +35,8 @@ class ShardedWalletAggregatesSpec
 
   def typedSystem[T]: ActorSystem[T] = system.asInstanceOf[ActorSystem[T]]
 
-  val cluster = Cluster(system)
+  val cluster         = Cluster(system)
+  val clusterSharding = ClusterSharding(typedSystem)
 
   "ShardedWalletAggregatesSpec" - {
     "sharding" in {
@@ -42,13 +44,12 @@ class ShardedWalletAggregatesSpec
       eventually {
         cluster.selfMember.status shouldEqual MemberStatus.Up
       }
-      val sharding = ShardedWalletAggregates.newClusterSharding(typedSystem)
-      ShardedWalletAggregates.initClusterSharding(sharding, 10, 1 hours)
+      ShardedWalletAggregates.initClusterSharding(clusterSharding, 10, 1 hours)
 
       val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
       val walletId  = newULID
-      val entityRef = sharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
-      entityRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
+      val walletRef = clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+      walletRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
       probe.expectMessage(CreateWalletSucceeded)
     }
   }

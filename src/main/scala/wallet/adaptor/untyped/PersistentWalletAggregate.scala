@@ -6,16 +6,21 @@ import akka.persistence.{ PersistentActor, RecoveryCompleted }
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
 
-import scala.concurrent.duration.FiniteDuration
-
 object PersistentWalletAggregate {
 
   def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new PersistentWalletAggregate(id, requestsLimit))
+    Props(new PersistentWalletAggregate(id, requestsLimit)(WalletAggregate.props))
 }
 
-private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLimit: Int)
-    extends PersistentActor
+/**
+  * 委譲によってWalletAggregateに永続化機能を付与するアクター。
+  *
+  * @param id
+  * @param requestsLimit
+  */
+private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLimit: Int)(
+    propsF: (WalletId, Int) => Props
+) extends PersistentActor
     with ActorLogging {
 
   override def supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
@@ -24,12 +29,13 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
   }
 
   private val childRef =
-    context.actorOf(WalletAggregate.props(id, requestsLimit), name = WalletAggregate.name(id))
+    context.actorOf(propsF(id, requestsLimit), name = WalletAggregate.name(id))
 
   context.watch(childRef)
 
   override def persistenceId: String = "p-" + WalletAggregate.name(id)
 
+  // TODO: ドメインイベントにコマンドを生成するメソッドがあればロジックがすっきりするかも
   override def receiveRecover: Receive = {
     case e: WalletCreated =>
       childRef ! CreateWalletRequest(newULID, e.walletId)
@@ -43,6 +49,7 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
       log.debug("recovery completed")
   }
 
+  // TODO: コマンドリクエストにドメインイベントを生成するメソッドがあればロジックがすっきりするかも
   override def receiveCommand: Receive = {
     case Terminated(c) if c == childRef =>
       context.stop(self)

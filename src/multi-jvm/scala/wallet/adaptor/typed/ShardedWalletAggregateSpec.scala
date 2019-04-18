@@ -1,23 +1,19 @@
 package wallet.adaptor.typed
+import java.time.Instant
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.actor.{ ActorIdentity, Identify, Props }
-import akka.cluster.Cluster
-import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import wallet.adaptor.MultiNodeSampleConfig.{ controller, node1, node2 }
-import wallet.adaptor.typed.WalletProtocol.{
-  CommandRequest,
-  CreateWalletRequest,
-  CreateWalletResponse,
-  CreateWalletSucceeded
-}
+import wallet.adaptor.typed.WalletProtocol._
 import wallet.adaptor.{ MultiNodeSampleConfig, STMultiNodeSpecSupport }
+import wallet.domain.Money
 import wallet.newULID
 
 import scala.concurrent.duration._
@@ -33,10 +29,7 @@ class ShardedWalletAggregateSpec
 
   override def initialParticipants: Int = roles.size
 
-  def typedSystem[T]: ActorSystem[T] = system.toTyped.asInstanceOf[ActorSystem[T]]
-
-  var node1Ref: ActorRef[ShardingEnvelope[CommandRequest]] = _
-  var node2Ref: ActorRef[ShardingEnvelope[CommandRequest]] = _
+  implicit def typedSystem[T]: ActorSystem[T] = system.toTyped.asInstanceOf[ActorSystem[T]]
 
   "ShardedWalletAggregate" - {
     "setup shared journal" in {
@@ -53,32 +46,50 @@ class ShardedWalletAggregateSpec
       enterBarrier("after-1")
     }
     "join cluster" in within(15 seconds) {
-      join(node1, node1) {}
-      join(node2, node1) {}
+      join(node1, node1) {
+        ShardedWalletAggregates.initClusterSharding(ClusterSharding(typedSystem), 10, 1 hours)
+      }
+      join(node2, node1) {
+        ShardedWalletAggregates.initClusterSharding(ClusterSharding(typedSystem), 10, 1 hours)
+      }
       enterBarrier("after-2")
     }
     "createWallet" in {
       runOn(node1) {
-        val sharding: ClusterSharding = ShardedWalletAggregates.newClusterSharding(typedSystem)
-        ShardedWalletAggregates.initClusterSharding(sharding, 10, 1 hours)
+        val walletId                  = newULID
+        val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+        val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
-        val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
-        val walletId  = newULID
-        val entityRef = sharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
-        entityRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
-        probe.expectMessage(CreateWalletSucceeded)
+        val depositResponseProbe = TestProbe[DepositResponse]
+        val money                = Money(BigDecimal(100))
+        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        depositResponseProbe.expectMessage(DepositSucceeded)
+
+        val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+        walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+        getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
+
       }
       enterBarrier("after-3")
-//      runOn(node2) {
-//        val sharding = ShardedWalletAggregates.newClusterSharding(typedSystem)
-//        ShardedWalletAggregates.initClusterSharding(sharding, 10, 1 hours)
-//        val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
-//        val walletId  = newULID
-//        val entityRef = sharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
-//        entityRef ! CreateWalletRequest(newULID, walletId, Some(probe.ref))
-//        probe.expectMessage(CreateWalletSucceeded)
-//      }
-//      enterBarrier("after-4")
+      runOn(node2) {
+        val walletId                  = newULID
+        val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+        val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+        walletRef ! CreateWalletRequest(newULID, walletId, Some(createWalletResponseProbe.ref))
+        createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
+
+        val depositResponseProbe = TestProbe[DepositResponse]
+        val money                = Money(BigDecimal(100))
+        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        depositResponseProbe.expectMessage(DepositSucceeded)
+
+        val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+        walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+        getBalanceResponseProbe.expectMessageType[GetBalanceResponse]
+      }
+      enterBarrier("after-4")
 
     }
   }

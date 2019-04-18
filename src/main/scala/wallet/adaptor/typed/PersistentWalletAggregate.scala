@@ -7,10 +7,9 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 
-import scala.concurrent.duration._
-
 object PersistentWalletAggregate {
 
+  // TODO: ドメインイベントにコマンドを生成するメソッドがあればロジックがすっきりするかも
   private val eventHandler: (State, Event) => State = { (state, event) =>
     event match {
       case e: WalletCreated =>
@@ -28,6 +27,7 @@ object PersistentWalletAggregate {
     }
   }
 
+  // TODO: コマンドリクエストにドメインイベントを生成するメソッドがあればロジックがすっきりするかも
   private val commandHandler: (State, CommandRequest) => Effect[Event, State] = { (state, command) =>
     command match {
       case m: CreateWalletRequest =>
@@ -60,7 +60,7 @@ object PersistentWalletAggregate {
           context.spawn(WalletAggregate.behavior(id, requestsLimit), WalletAggregate.name(id))
         context.watch(childRef)
         EventSourcedBehavior[CommandRequest, Event, State](
-          persistenceId = PersistenceId(id.toString),
+          persistenceId = PersistenceId("p-" + id.toString),
           emptyState = State(childRef),
           commandHandler,
           eventHandler
