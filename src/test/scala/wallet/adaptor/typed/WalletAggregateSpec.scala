@@ -3,54 +3,73 @@ package wallet.adaptor.typed
 import java.time.Instant
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.typed.ActorRef
 import org.scalatest._
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.domain.Money
+import wallet.domain.{ Balance, Money }
 
 /**
   * Wallet集約アクターの単体テスト。
   */
 class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike with Matchers {
 
+  def newWalletRef(id: WalletId): ActorRef[CommandRequest] = spawn(WalletAggregate.behavior(id))
+
   "WalletAggregate" - {
+    // 作成
     "create" in {
       val walletId                  = newULID
-      val walletRef                 = spawn(WalletAggregate.behavior(walletId))
+      val walletRef                 = newWalletRef(walletId)
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
-    }
-    "addSubscribers" in {
-      val walletId    = newULID
-      val walletRef   = spawn(WalletAggregate.behavior(walletId))
-      val eventProbes = for (_ <- 1 to 5) yield TestProbe[Event]
-      walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
 
-      val probe = TestProbe[CreateWalletResponse]
-      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(probe.ref))
-      probe.expectMessage(CreateWalletSucceeded)
-      eventProbes.foreach { eventProbe =>
-        eventProbe.expectMessageType[WalletCreated].walletId shouldBe walletId
-      }
+      val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+      walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+      getBalanceResponseProbe.expectMessage(GetBalanceResponse(Balance.zero))
     }
+    // 入金
     "deposit" in {
       val walletId  = newULID
-      val walletRef = spawn(WalletAggregate.behavior(walletId))
+      val walletRef = newWalletRef(walletId)
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
-      val money               = Money(BigDecimal(100))
       val depositRequestProbe = TestProbe[DepositResponse]
+      val money               = Money(BigDecimal(100))
       walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositRequestProbe.ref))
       depositRequestProbe.expectMessage(DepositSucceeded)
+
+      val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+      walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+      getBalanceResponseProbe.expectMessage(GetBalanceResponse(Balance(money)))
     }
+    // 残高確認
+    "get balance" in {
+      val walletId  = newULID
+      val walletRef = newWalletRef(walletId)
+
+      val createWalletResponseProbe = TestProbe[CreateWalletResponse]
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
+      createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
+
+      val depositResponseProbe = TestProbe[DepositResponse]
+      val money                = Money(BigDecimal(100))
+      walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+      depositResponseProbe.expectMessage(DepositSucceeded)
+
+      val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+      walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+      getBalanceResponseProbe.expectMessage(GetBalanceResponse(Balance(money)))
+    }
+    // 請求
     "charge" in {
       val walletId  = newULID
-      val walletRef = spawn(WalletAggregate.behavior(walletId))
+      val walletRef = newWalletRef(walletId)
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
@@ -60,7 +79,26 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       val money               = Money(BigDecimal(100))
       val requestRequestProbe = TestProbe[ChargeResponse]
       walletRef ! ChargeRequest(newULID, chargeId, walletId, money, Instant.now, Some(requestRequestProbe.ref))
-      requestRequestProbe.expectMessage(ChargeSucceeded$)
+      requestRequestProbe.expectMessage(ChargeSucceeded)
+
+      val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
+      walletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
+      getBalanceResponseProbe.expectMessage(GetBalanceResponse(Balance.zero))
+    }
+    // ドメインイベントの購読
+    "addSubscribers" in {
+      val walletId  = newULID
+      val walletRef = newWalletRef(walletId)
+
+      val eventProbes = for (_ <- 1 to 5) yield TestProbe[Event]
+      walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
+
+      val probe = TestProbe[CreateWalletResponse]
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(probe.ref))
+      probe.expectMessage(CreateWalletSucceeded)
+      eventProbes.foreach { eventProbe =>
+        eventProbe.expectMessageType[WalletCreated].walletId shouldBe walletId
+      }
     }
   }
 

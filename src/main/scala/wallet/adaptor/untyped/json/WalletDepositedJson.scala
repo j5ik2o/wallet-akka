@@ -13,18 +13,19 @@ object WalletDepositedJson {
 
   import MoneyJson._
 
-  implicit val walletDepositedJsonIso = Iso[WalletDeposited, WalletDepositedJson] { event =>
-    WalletDepositedJson(
-      walletId = event.walletId.toString,
-      money = moneyJsonIso.get(event.money),
-      occurredAt = event.occurredAt.toEpochMilli
-    )
-  } { json =>
-    WalletDeposited(
-      walletId = ULID.parseULID(json.walletId),
-      money = moneyJsonIso.reverseGet(json.money),
-      occurredAt = Instant.ofEpochMilli(json.occurredAt)
-    )
-  }
+  implicit val walletDepositedJsonIso: Iso[WalletDeposited, WalletDepositedJson] =
+    Iso[WalletDeposited, WalletDepositedJson] { event =>
+      WalletDepositedJson(
+        walletId = event.walletId.toString,
+        money = moneyJsonIso.get(event.money),
+        occurredAt = event.occurredAt.toEpochMilli
+      )
+    } { json =>
+      WalletDeposited(
+        walletId = ULID.parseULID(json.walletId),
+        money = moneyJsonIso.reverseGet(json.money),
+        occurredAt = Instant.ofEpochMilli(json.occurredAt)
+      )
+    }
 
 }

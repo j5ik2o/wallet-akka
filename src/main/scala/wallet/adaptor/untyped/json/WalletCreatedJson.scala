@@ -10,11 +10,12 @@ final case class WalletCreatedJson(walletId: String, occurredAt: Long)
 
 object WalletCreatedJson {
 
-  implicit val walletCreatedJsonIso = Iso[WalletCreated, WalletCreatedJson] { event =>
-    WalletCreatedJson(
-      walletId = event.walletId.toString,
-      occurredAt = event.occurredAt.toEpochMilli
-    )
+  implicit val walletCreatedJsonIso: Iso[WalletCreated, WalletCreatedJson] = Iso[WalletCreated, WalletCreatedJson] {
+    event =>
+      WalletCreatedJson(
+        walletId = event.walletId.toString,
+        occurredAt = event.occurredAt.toEpochMilli
+      )
   } { json =>
     WalletCreated(
       walletId = ULID.parseULID(json.walletId),

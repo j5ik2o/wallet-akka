@@ -16,6 +16,9 @@ object WalletAggregate {
 
   def name(id: WalletId): String = "wallet-typed-" + id.toString
 
+  def isReceive(maybeWallet: Option[Wallet], id: WalletId, walletId: WalletId): Boolean =
+    maybeWallet.nonEmpty && walletId == id
+
   def behavior(
       id: WalletId,
       requestsLimit: Int = Int.MaxValue
@@ -28,7 +31,7 @@ object WalletAggregate {
       ): Behaviors.Receive[CommandRequest] = {
         val fireEventToSubscribers = fireEvent(subscribers) _
         Behaviors.receiveMessage[CommandRequest] {
-          case GetBalanceRequest(_, walletId, replyTo) if walletId == id =>
+          case GetBalanceRequest(_, walletId, replyTo) if isReceive(maybeWallet, id, walletId) =>
             replyTo ! GetBalanceResponse(getWallet(maybeWallet).balance)
             Behaviors.same
 
@@ -43,7 +46,7 @@ object WalletAggregate {
             fireEventToSubscribers(WalletCreated(walletId, createdAt))
             onMessage(Some(Wallet(walletId, Balance(Money.zero))), requests, subscribers)
 
-          case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
+          case DepositRequest(_, walletId, money, instant, replyTo) if isReceive(maybeWallet, id, walletId) =>
             val currentBalance = getWallet(maybeWallet).balance
             if (currentBalance.add(money) < Balance.zero)
               replyTo.foreach(_ ! DepositFailed("Can not trade because the balance after trading is less than 0"))
@@ -56,25 +59,26 @@ object WalletAggregate {
               subscribers
             )
 
-          case PayRequest(_, walletId, money, maybeChargeId, instant, replyTo)
-              if walletId == id && maybeChargeId.fold(true)(requests.contains) =>
+          case PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo)
+              if isReceive(maybeWallet, id, walletId) && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
             val currentBalance = getWallet(maybeWallet).balance
             if (currentBalance.sub(money) < Balance.zero)
               replyTo.foreach(_ ! PayFailed("Can not trade because the balance after trading is less than 0"))
             else
               replyTo.foreach(_ ! PaySucceeded)
-            fireEventToSubscribers(WalletPayed(walletId, money, maybeChargeId, instant))
+            fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
             onMessage(
               maybeWallet.map(_.subBalance(money)),
               requests.filterNot(maybeChargeId.contains),
               subscribers
             )
 
-          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
+          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo)
+              if isReceive(maybeWallet, id, walletId) =>
             if (requests.size > requestsLimit)
               replyTo.foreach(_ ! ChargeFailed("Limit over"))
             else
-              replyTo.foreach(_ ! ChargeSucceeded$)
+              replyTo.foreach(_ ! ChargeSucceeded)
             fireEventToSubscribers(WalletRequested(questId, walletId, money, instant))
             onMessage(
               maybeWallet,

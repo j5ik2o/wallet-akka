@@ -45,6 +45,7 @@ object WalletProtocol {
   case class PayRequest(
       id: CommandId,
       walletId: WalletId,
+      toWalletId: WalletId,
       money: Money,
       chargeId: Option[ChargeId],
       createdAt: Instant
@@ -56,8 +57,13 @@ object WalletProtocol {
 
   case class PayFailed(message: String) extends PayResponse
 
-  case class WalletPayed(walletId: WalletId, money: Money, chargeId: Option[ChargeId], occurredAt: Instant)
-      extends Event
+  case class WalletPayed(
+      walletId: WalletId,
+      toWalletId: WalletId,
+      money: Money,
+      chargeId: Option[ChargeId],
+      occurredAt: Instant
+  ) extends Event
 
   // 請求
   case class ChargeRequest(id: CommandId, chargeId: ChargeId, walletId: WalletId, money: Money, createdAt: Instant)
