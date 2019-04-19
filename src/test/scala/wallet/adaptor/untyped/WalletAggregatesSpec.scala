@@ -17,19 +17,6 @@ class WalletAggregatesSpec extends AkkaSpec {
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
     }
-    "addSubscribers" in {
-      val walletRef = system.actorOf(WalletAggregates.props()(WalletAggregate.props))
-
-      val walletId    = newULID
-      val eventProbes = for (_ <- 1 to 5) yield TestProbe()
-      walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
-
-      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
-      expectMsg(CreateWalletSucceeded)
-      eventProbes.foreach { eventProbe =>
-        eventProbe.expectMsgType[WalletCreated].walletId shouldBe walletId
-      }
-    }
     "deposit" in {
       val walletRef = system.actorOf(WalletAggregates.props()(WalletAggregate.props))
       val walletId  = newULID
@@ -48,10 +35,23 @@ class WalletAggregatesSpec extends AkkaSpec {
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
 
-      val requestId = newULID
-      val money     = Money(BigDecimal(100))
-      walletRef ! ChargeRequest(newULID, requestId, walletId, money, Instant.now)
+      val chargeId = newULID
+      val money    = Money(BigDecimal(100))
+      walletRef ! ChargeRequest(newULID, chargeId, walletId, money, Instant.now)
       expectMsg(ChargeSucceeded)
+    }
+    "addSubscribers" in {
+      val walletRef = system.actorOf(WalletAggregates.props()(WalletAggregate.props))
+
+      val walletId    = newULID
+      val eventProbes = for (_ <- 1 to 5) yield TestProbe()
+      walletRef ! AddSubscribers(newULID, walletId, eventProbes.map(_.ref).toVector)
+
+      walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
+      expectMsg(CreateWalletSucceeded)
+      eventProbes.foreach { eventProbe =>
+        eventProbe.expectMsgType[WalletCreated].walletId shouldBe walletId
+      }
     }
   }
 }

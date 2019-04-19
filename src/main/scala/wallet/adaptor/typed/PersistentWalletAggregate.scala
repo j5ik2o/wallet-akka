@@ -22,7 +22,7 @@ object PersistentWalletAggregate {
         state.childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt)
         state
       case e: WalletPayed =>
-        state.childRef ! PayRequest(newULID, e.walletId, e.money, e.requestId, e.occurredAt)
+        state.childRef ! PayRequest(newULID, e.walletId, e.money, e.chargeId, e.occurredAt)
         state
     }
   }
@@ -38,10 +38,10 @@ object PersistentWalletAggregate {
         Effect.persist(WalletDeposited(m.walletId, m.money, m.createdAt))
       case m: ChargeRequest =>
         state.childRef ! m
-        Effect.persist(WalletRequested(m.requestId, m.walletId, m.money, m.createdAt))
+        Effect.persist(WalletRequested(m.chargeId, m.walletId, m.money, m.createdAt))
       case m: PayRequest =>
         state.childRef ! m
-        Effect.persist(WalletPayed(m.walletId, m.money, m.requestId, m.createdAt))
+        Effect.persist(WalletPayed(m.walletId, m.money, m.chargeId, m.createdAt))
       case m =>
         state.childRef ! m
         Effect.none

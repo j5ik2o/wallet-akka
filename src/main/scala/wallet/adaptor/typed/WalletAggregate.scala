@@ -56,17 +56,17 @@ object WalletAggregate {
               subscribers
             )
 
-          case PayRequest(_, walletId, money, requestId, instant, replyTo)
-              if walletId == id && requestId.fold(true)(requests.contains) =>
+          case PayRequest(_, walletId, money, maybeChargeId, instant, replyTo)
+              if walletId == id && maybeChargeId.fold(true)(requests.contains) =>
             val currentBalance = getWallet(maybeWallet).balance
             if (currentBalance.sub(money) < Balance.zero)
               replyTo.foreach(_ ! PayFailed("Can not trade because the balance after trading is less than 0"))
             else
               replyTo.foreach(_ ! PaySucceeded)
-            fireEventToSubscribers(WalletPayed(walletId, money, requestId, instant))
+            fireEventToSubscribers(WalletPayed(walletId, money, maybeChargeId, instant))
             onMessage(
               maybeWallet.map(_.subBalance(money)),
-              requests.filterNot(requestId.contains),
+              requests.filterNot(maybeChargeId.contains),
               subscribers
             )
 

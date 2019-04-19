@@ -46,7 +46,7 @@ object WalletProtocol {
       id: CommandId,
       walletId: WalletId,
       money: Money,
-      requestId: Option[ChargeId],
+      chargeId: Option[ChargeId],
       createdAt: Instant
   ) extends CommandRequest
 
@@ -56,11 +56,11 @@ object WalletProtocol {
 
   case class PayFailed(message: String) extends PayResponse
 
-  case class WalletPayed(walletId: WalletId, money: Money, requestId: Option[ChargeId], occurredAt: Instant)
+  case class WalletPayed(walletId: WalletId, money: Money, chargeId: Option[ChargeId], occurredAt: Instant)
       extends Event
 
   // 請求
-  case class ChargeRequest(id: CommandId, requestId: ChargeId, walletId: WalletId, money: Money, createdAt: Instant)
+  case class ChargeRequest(id: CommandId, chargeId: ChargeId, walletId: WalletId, money: Money, createdAt: Instant)
       extends CommandRequest
 
   sealed trait ChargeResponse extends CommandResponse
