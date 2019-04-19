@@ -93,7 +93,7 @@ object WalletProtocol {
 
   case class ChargeFailed(message: String) extends ChargeResponse
 
-  case class WalletRequested(chargeId: ChargeId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
+  case class WalletCharged(chargeId: ChargeId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId, replyTo: ActorRef[GetBalanceResponse])

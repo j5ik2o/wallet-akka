@@ -79,7 +79,7 @@ object WalletAggregate {
               replyTo.foreach(_ ! ChargeFailed("Limit over"))
             else
               replyTo.foreach(_ ! ChargeSucceeded)
-            fireEventToSubscribers(WalletRequested(questId, walletId, money, instant))
+            fireEventToSubscribers(WalletCharged(questId, walletId, money, instant))
             onMessage(
               maybeWallet,
               requests :+ rr,

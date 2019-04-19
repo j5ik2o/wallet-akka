@@ -20,7 +20,8 @@ object WalletProtocol {
   sealed trait CommandResponse extends CommandMessage
 
   // 作成
-  case class CreateWalletRequest(id: CommandId, walletId: WalletId, createdAt: Instant) extends CommandRequest
+  case class CreateWalletRequest(id: CommandId, walletId: WalletId, createdAt: Instant, noReply: Boolean = false)
+      extends CommandRequest
 
   sealed trait CreateWalletResponse extends CommandResponse
 
@@ -31,7 +32,13 @@ object WalletProtocol {
   case class WalletCreated(walletId: WalletId, occurredAt: Instant) extends Event
 
   // 入金
-  case class DepositRequest(id: CommandId, walletId: WalletId, money: Money, createdAt: Instant) extends CommandRequest
+  case class DepositRequest(
+      id: CommandId,
+      walletId: WalletId,
+      money: Money,
+      createdAt: Instant,
+      noReply: Boolean = false
+  ) extends CommandRequest
 
   sealed trait DepositResponse extends CommandResponse
 
@@ -48,7 +55,8 @@ object WalletProtocol {
       toWalletId: WalletId,
       money: Money,
       chargeId: Option[ChargeId],
-      createdAt: Instant
+      createdAt: Instant,
+      noReply: Boolean = false
   ) extends CommandRequest
 
   sealed trait PayResponse extends CommandResponse
@@ -66,8 +74,14 @@ object WalletProtocol {
   ) extends Event
 
   // 請求
-  case class ChargeRequest(id: CommandId, chargeId: ChargeId, walletId: WalletId, money: Money, createdAt: Instant)
-      extends CommandRequest
+  case class ChargeRequest(
+      id: CommandId,
+      chargeId: ChargeId,
+      walletId: WalletId,
+      money: Money,
+      createdAt: Instant,
+      noReply: Boolean = false
+  ) extends CommandRequest
 
   sealed trait ChargeResponse extends CommandResponse
 

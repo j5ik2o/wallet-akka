@@ -3,7 +3,7 @@ package wallet.adaptor.untyped
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{ Balance, Money, Wallet }
+import wallet.domain.{ Balance, Wallet }
 
 object WalletAggregate {
 
@@ -37,22 +37,26 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       log.debug(s"message = $m")
       context.become(onMessage(maybeWallet, requests, subscribers ++ s))
 
-    case m @ CreateWalletRequest(_, walletId, createdAt) if walletId == id =>
+    case m @ CreateWalletRequest(_, walletId, createdAt, noReply) if walletId == id =>
       log.debug(s"message = $m")
-      if (maybeWallet.isEmpty)
-        sender() ! CreateWalletSucceeded
-      else
-        sender() ! CreateWalletFailed("Already created")
+      if (!noReply) {
+        if (maybeWallet.isEmpty)
+          sender() ! CreateWalletSucceeded
+        else
+          sender() ! CreateWalletFailed("Already created")
+      }
       fireEvent(subscribers)(WalletCreated(walletId, createdAt))
       context.become(onMessage(Some(Wallet(id, Balance.zero)), requests, subscribers))
 
-    case m @ DepositRequest(_, walletId, money, instant) if walletId == id =>
+    case m @ DepositRequest(_, walletId, money, instant, noReply) if walletId == id =>
       log.debug(s"message = $m")
       val currentBalance = getWallet(maybeWallet).balance
-      if (currentBalance.add(money) < Balance.zero)
-        sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
-      else
-        sender() ! DepositSucceeded
+      if (!noReply) {
+        if (currentBalance.add(money) < Balance.zero)
+          sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
+        else
+          sender() ! DepositSucceeded
+      }
       fireEvent(subscribers)(WalletDeposited(walletId, money, instant))
       context.become(
         onMessage(
@@ -62,14 +66,16 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
         )
       )
 
-    case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant)
+    case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply)
         if walletId == id && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
       log.debug(s"message = $m")
       val currentBalance = getWallet(maybeWallet).balance
-      if (currentBalance.sub(money) < Balance.zero)
-        sender() ! PayFailed("Can not trade because the balance after trading is less than 0")
-      else
-        sender() ! PaySucceeded
+      if (!noReply) {
+        if (currentBalance.sub(money) < Balance.zero)
+          sender() ! PayFailed("Can not trade because the balance after trading is less than 0")
+        else
+          sender() ! PaySucceeded
+      }
       fireEvent(subscribers)(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
       context.become(
         onMessage(
@@ -79,12 +85,14 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
         )
       )
 
-    case rr @ ChargeRequest(_, chargeId, walletId, money, instant) if walletId == id =>
+    case rr @ ChargeRequest(_, chargeId, walletId, money, instant, noReply) if walletId == id =>
       log.debug(s"message = $rr")
-      if (requests.size > requestsLimit)
-        sender() ! ChargeFailed("Limit over")
-      else
-        sender() ! ChargeSucceeded
+      if (!noReply) {
+        if (requests.size > requestsLimit)
+          sender() ! ChargeFailed("Limit over")
+        else
+          sender() ! ChargeSucceeded
+      }
       fireEvent(subscribers)(WalletCharged(chargeId, walletId, money, instant))
       context.become(
         onMessage(

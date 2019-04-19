@@ -38,19 +38,21 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
   // TODO: ドメインイベントにコマンドを生成するメソッドがあればロジックがすっきりするかも
   override def receiveRecover: Receive = {
     case e: WalletCreated =>
-      childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt)
+      childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt, noReply = true)
     case e: WalletDeposited =>
-      childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt)
+      childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt, noReply = true)
     case e: WalletCharged =>
-      childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt)
+      childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt, noReply = true)
     case e: WalletPayed =>
-      childRef ! PayRequest(newULID, e.walletId, e.toWalletId, e.money, e.chargeId, e.occurredAt)
+      childRef ! PayRequest(newULID, e.walletId, e.toWalletId, e.money, e.chargeId, e.occurredAt, noReply = true)
     case RecoveryCompleted =>
       log.debug("recovery completed")
   }
 
   // TODO: コマンドリクエストにドメインイベントを生成するメソッドがあればロジックがすっきりするかも
   override def receiveCommand: Receive = {
+    case event: Event =>
+      ()
     case Terminated(c) if c == childRef =>
       context.stop(self)
     case m: CreateWalletRequest =>

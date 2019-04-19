@@ -1,18 +1,18 @@
-package wallet.adaptor.untyped.serialization
+package wallet.adaptor.typed.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 import akka.serialization.SerializerWithStringManifest
 import wallet.adaptor.serialization.CirceJsonSerialization
-import wallet.adaptor.untyped.WalletProtocol.{ WalletCharged, WalletCreated, WalletDeposited, WalletPayed }
-import wallet.adaptor.untyped.json.{ WalletChargedJson, WalletCreatedJson, WalletDepositedJson, WalletPayedJson }
+import wallet.adaptor.typed.WalletProtocol.{ WalletCharged, WalletCreated, WalletDeposited, WalletPayed }
+import wallet.adaptor.typed.json.{ WalletChargedJson, WalletCreatedJson, WalletDepositedJson, WalletPayedJson }
 
 class WalletEventJsonSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
   import io.circe.generic.auto._
-  import wallet.adaptor.untyped.json.WalletChargedJson._
-  import wallet.adaptor.untyped.json.WalletCreatedJson._
-  import wallet.adaptor.untyped.json.WalletDepositedJson._
-  import wallet.adaptor.untyped.json.WalletPayedJson._
+  import wallet.adaptor.typed.json.WalletChargedJson._
+  import wallet.adaptor.typed.json.WalletCreatedJson._
+  import wallet.adaptor.typed.json.WalletDepositedJson._
+  import wallet.adaptor.typed.json.WalletPayedJson._
   final val WalletCreatedManifest   = classOf[WalletCreated].getName
   final val WalletDepositedManifest = classOf[WalletDeposited].getName
   final val WalletChargedManifest   = classOf[WalletCharged].getName
@@ -20,7 +20,7 @@ class WalletEventJsonSerializer(system: ExtendedActorSystem) extends SerializerW
 
   private implicit val log: LoggingAdapter = Logging.getLogger(system, getClass)
 
-  override def identifier: Int = 1
+  override def identifier: Int = 603
 
   override def manifest(o: AnyRef): String = o.getClass.getName
 
