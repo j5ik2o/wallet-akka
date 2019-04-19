@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.domain.{ Balance, Money, Wallet }
+import wallet.domain.{ Balance, Wallet }
 
 object WalletAggregate {
 
