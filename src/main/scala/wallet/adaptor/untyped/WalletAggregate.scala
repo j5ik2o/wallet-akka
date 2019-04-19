@@ -44,7 +44,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       else
         sender() ! CreateWalletFailed("Already created")
       fireEvent(subscribers)(WalletCreated(walletId, createdAt))
-      context.become(onMessage(Some(Wallet(id, Balance(Money.zero))), requests, subscribers))
+      context.become(onMessage(Some(Wallet(id, Balance.zero)), requests, subscribers))
 
     case m @ DepositRequest(_, walletId, money, instant) if walletId == id =>
       log.debug(s"message = $m")
@@ -56,7 +56,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       fireEvent(subscribers)(WalletDeposited(walletId, money, instant))
       context.become(
         onMessage(
-          maybeWallet.map(_.withBalance(currentBalance.add(money))),
+          maybeWallet.map(_.add(money)),
           requests,
           subscribers
         )
@@ -73,7 +73,7 @@ private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) e
       fireEvent(subscribers)(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
       context.become(
         onMessage(
-          maybeWallet.map(_.withBalance(currentBalance.sub(money))),
+          maybeWallet.map(_.subtract(money)),
           requests.filterNot(maybeChargeId.contains),
           subscribers
         )

@@ -44,7 +44,7 @@ object WalletAggregate {
             else
               replyTo.foreach(_ ! CreateWalletFailed("Already created"))
             fireEventToSubscribers(WalletCreated(walletId, createdAt))
-            onMessage(Some(Wallet(walletId, Balance(Money.zero))), requests, subscribers)
+            onMessage(Some(Wallet(walletId, Balance.zero)), requests, subscribers)
 
           case DepositRequest(_, walletId, money, instant, replyTo) if isReceive(maybeWallet, id, walletId) =>
             val currentBalance = getWallet(maybeWallet).balance
@@ -54,7 +54,7 @@ object WalletAggregate {
               replyTo.foreach(_ ! DepositSucceeded)
             fireEventToSubscribers(WalletDeposited(walletId, money, instant))
             onMessage(
-              maybeWallet.map(_.addBalance(money)),
+              maybeWallet.map(_.add(money)),
               requests,
               subscribers
             )
@@ -68,7 +68,7 @@ object WalletAggregate {
               replyTo.foreach(_ ! PaySucceeded)
             fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
             onMessage(
-              maybeWallet.map(_.subBalance(money)),
+              maybeWallet.map(_.subtract(money)),
               requests.filterNot(maybeChargeId.contains),
               subscribers
             )

@@ -8,11 +8,11 @@ final case class Wallet(id: ULID, balance: Balance) {
     copy(balance = value)
   }
 
-  def addBalance(other: Money): Wallet = {
+  def add(other: Money): Wallet = {
     copy(balance = balance.add(other))
   }
 
-  def subBalance(other: Money): Wallet = {
+  def subtract(other: Money): Wallet = {
     copy(balance = balance.sub(other))
   }
 
