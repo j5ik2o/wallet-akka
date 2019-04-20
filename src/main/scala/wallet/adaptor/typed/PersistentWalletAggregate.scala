@@ -9,43 +9,18 @@ import wallet.adaptor.typed.WalletProtocol._
 
 object PersistentWalletAggregate {
 
-  // TODO: ドメインイベントにコマンドを生成するメソッドがあればロジックがすっきりするかも
   private val eventHandler: (State, Event) => State = { (state, event) =>
-    event match {
-      case e: WalletCreated =>
-        state.childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt)
-        state
-      case e: WalletDeposited =>
-        state.childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt)
-        state
-      case e: WalletCharged =>
-        state.childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt)
-        state
-      case e: WalletPayed =>
-        state.childRef ! PayRequest(newULID, e.walletId, e.toWalletId, e.money, e.chargeId, e.occurredAt)
-        state
-      case e =>
-        state
-    }
+    state.childRef ! event.toCommandRequest
+    state
   }
 
-  // TODO: コマンドリクエストにドメインイベントを生成するメソッドがあればロジックがすっきりするかも
   private val commandHandler: (State, CommandRequest) => Effect[Event, State] = { (state, command) =>
     command match {
-      case m: CreateWalletRequest =>
-        state.childRef ! m
-        Effect.persist(WalletCreated(m.walletId, m.createdAt))
-      case m: DepositRequest =>
-        state.childRef ! m
-        Effect.persist(WalletDeposited(m.walletId, m.money, m.createdAt))
-      case m: ChargeRequest =>
-        state.childRef ! m
-        Effect.persist(WalletCharged(m.chargeId, m.walletId, m.money, m.createdAt))
-      case m: PayRequest =>
-        state.childRef ! m
-        Effect.persist(WalletPayed(m.walletId, m.toWalletId, m.money, m.chargeId, m.createdAt))
-      case m =>
-        state.childRef ! m
+      case commandRequest: CommandRequest with ToEvent =>
+        state.childRef ! commandRequest
+        Effect.persist(commandRequest.toEvent)
+      case commandRequest: CommandRequest =>
+        state.childRef ! commandRequest
         Effect.none
     }
   }
