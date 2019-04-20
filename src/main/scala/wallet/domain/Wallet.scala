@@ -1,19 +1,49 @@
 package wallet.domain
 
-import wallet.ULID
+import java.time.Instant
 
-final case class Wallet(id: ULID, balance: Balance) {
+import wallet.{ ChargeId, ULID }
 
-  def withBalance(value: Balance): Wallet = {
-    copy(balance = value)
+final case class Wallet(
+    id: ULID,
+    chargesLimit: Int,
+    balance: Balance,
+    charges: Vector[Charge],
+    createdAt: Instant,
+    updatedAt: Instant
+) {
+
+  def deposit(other: Money, updatedAt: Instant): Either[Throwable, Wallet] = {
+    if (balance.add(other) < Balance.zero)
+      Left(new IllegalArgumentException("Can not trade because the balance after trading is less than 0"))
+    else
+      Right(copy(balance = balance.add(other), updatedAt = updatedAt))
   }
 
-  def add(other: Money): Wallet = {
-    copy(balance = balance.add(other))
+  def pay(other: Money, maybeChargeId: Option[ChargeId], updatedAt: Instant): Either[Throwable, Wallet] = {
+    if (maybeChargeId.nonEmpty && !charges.map(_.id).exists(v => maybeChargeId.contains(v)))
+      Left(new IllegalArgumentException("ChargeId is not found"))
+    else if (balance.sub(other) < Balance.zero)
+      Left(new IllegalArgumentException("Can not trade because the balance after trading is less than 0"))
+    else {
+      Right(copy(balance = balance.sub(other), charges = maybeChargeId.fold(charges) { v =>
+        charges.filterNot(_.id == v)
+      }, updatedAt = updatedAt))
+    }
   }
 
-  def subtract(other: Money): Wallet = {
-    copy(balance = balance.sub(other))
+  def addCharge(charge: Charge, updatedAt: Instant): Either[Throwable, Wallet] = {
+    if (charges.size < chargesLimit)
+      Right(copy(charges = charges :+ charge, updatedAt = updatedAt))
+    else
+      Left(new IllegalArgumentException("The number of charges is limit over"))
+  }
+
+  def removeCharge(chargeId: ChargeId, updatedAt: Instant): Either[Throwable, Wallet] = {
+    if (charges.nonEmpty)
+      Right(copy(charges = charges.filterNot(_.id == chargeId), updatedAt = updatedAt))
+    else
+      Left(new IllegalArgumentException("The number of charges is limit over"))
   }
 
 }

@@ -1,102 +1,107 @@
 package wallet.adaptor.typed
 
+import java.time.Instant
+
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior }
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.domain.{ Balance, Wallet }
+import wallet.domain.{ Balance, Charge, Wallet }
 
 object WalletAggregate {
-
-  private def getWallet(w: Option[Wallet]): Wallet =
-    w.getOrElse(throw new IllegalStateException("Invalid state"))
 
   private def fireEvent(subscribers: Vector[ActorRef[Event]])(event: Event): Unit =
     subscribers.foreach(_ ! event)
 
   def name(id: WalletId): String = "wallet-typed-" + id.toString
 
-  def isReceive(maybeWallet: Option[Wallet], id: WalletId, walletId: WalletId): Boolean =
-    maybeWallet.nonEmpty && walletId == id
+  private def onUninitialized(
+      id: WalletId,
+      chargesLimit: Int,
+      subscribers: Vector[ActorRef[Event]]
+  ): Behaviors.Receive[CommandRequest] = {
+    val fireEventToSubscribers = fireEvent(subscribers) _
+    Behaviors.receiveMessage[CommandRequest] {
+      case AddSubscribers(_, walletId, s) if walletId == id =>
+        onUninitialized(id, chargesLimit, subscribers ++ s)
+      case CreateWalletRequest(_, walletId, createdAt, replyTo) if walletId == id =>
+        replyTo.foreach(_ ! CreateWalletSucceeded)
+        fireEventToSubscribers(WalletCreated(walletId, createdAt))
+        val now = Instant.now
+        onInitialized(id, Wallet(walletId, chargesLimit, Balance.zero, Vector.empty, now, now), subscribers)
+    }
+  }
+
+  private def onInitialized(
+      id: WalletId,
+      wallet: Wallet,
+      subscribers: Vector[ActorRef[Event]]
+  ): Behaviors.Receive[CommandRequest] = {
+    val fireEventToSubscribers = fireEvent(subscribers) _
+    Behaviors.receiveMessage[CommandRequest] {
+      case GetBalanceRequest(_, walletId, replyTo) if walletId == id =>
+        replyTo ! GetBalanceResponse(wallet.balance)
+        Behaviors.same
+
+      case AddSubscribers(_, walletId, s) if walletId == id =>
+        onInitialized(id, wallet, subscribers ++ s)
+
+      case CreateWalletRequest(_, _, _, replyTo) =>
+        replyTo.foreach(_ ! CreateWalletFailed("Already created"))
+        Behaviors.same
+
+      case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
+        wallet.deposit(money, instant) match {
+          case Left(t) =>
+            replyTo.foreach(_ ! DepositFailed(t.getMessage))
+            Behaviors.same
+          case Right(newWallet) =>
+            replyTo.foreach(_ ! DepositSucceeded)
+            fireEventToSubscribers(WalletDeposited(walletId, money, instant))
+            onInitialized(
+              id,
+              newWallet,
+              subscribers
+            )
+        }
+
+      case PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo) if walletId == id =>
+        wallet.pay(money, maybeChargeId, instant) match {
+          case Left(t) =>
+            replyTo.foreach(_ ! PayFailed(t.getMessage))
+            Behaviors.same
+          case Right(newWallet) =>
+            replyTo.foreach(_ ! PaySucceeded)
+            fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
+            onInitialized(
+              id,
+              newWallet,
+              subscribers
+            )
+        }
+
+      case ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
+        wallet.addCharge(Charge(newULID, walletId, money, instant), instant) match {
+          case Left(t) =>
+            replyTo.foreach(_ ! ChargeFailed(t.getMessage))
+            Behaviors.same
+          case Right(newWallet) =>
+            replyTo.foreach(_ ! ChargeSucceeded)
+            fireEventToSubscribers(WalletCharged(questId, walletId, money, instant))
+            onInitialized(
+              id,
+              newWallet,
+              subscribers
+            )
+        }
+    }
+
+  }
 
   def behavior(
       id: WalletId,
       requestsLimit: Int = Int.MaxValue
   ): Behavior[CommandRequest] =
-    Behaviors.setup[CommandRequest] { ctx =>
-      def onUninitialized(
-          subscribers: Vector[ActorRef[Event]]
-      ): Behaviors.Receive[CommandRequest] = {
-        val fireEventToSubscribers = fireEvent(subscribers) _
-        Behaviors.receiveMessage[CommandRequest] {
-          case AddSubscribers(_, walletId, s) if walletId == id =>
-            onUninitialized(subscribers ++ s)
-          case CreateWalletRequest(_, walletId, createdAt, replyTo) if walletId == id =>
-            replyTo.foreach(_ ! CreateWalletSucceeded)
-            fireEventToSubscribers(WalletCreated(walletId, createdAt))
-            onInitialized(Wallet(walletId, Balance.zero), Vector.empty, subscribers)
-        }
-      }
-      def onInitialized(
-          wallet: Wallet,
-          requests: Vector[ChargeRequest],
-          subscribers: Vector[ActorRef[Event]]
-      ): Behaviors.Receive[CommandRequest] = {
-        val fireEventToSubscribers = fireEvent(subscribers) _
-        Behaviors.receiveMessage[CommandRequest] {
-          case GetBalanceRequest(_, walletId, replyTo) if walletId == id =>
-            replyTo ! GetBalanceResponse(wallet.balance)
-            Behaviors.same
-
-          case AddSubscribers(_, walletId, s) if walletId == id =>
-            onInitialized(wallet, requests, subscribers ++ s)
-
-          case CreateWalletRequest(_, _, _, replyTo) =>
-            replyTo.foreach(_ ! CreateWalletFailed("Already created"))
-            Behaviors.same
-
-          case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
-            val currentBalance = wallet.balance
-            if (currentBalance.add(money) < Balance.zero)
-              replyTo.foreach(_ ! DepositFailed("Can not trade because the balance after trading is less than 0"))
-            else
-              replyTo.foreach(_ ! DepositSucceeded)
-            fireEventToSubscribers(WalletDeposited(walletId, money, instant))
-            onInitialized(
-              wallet.add(money),
-              requests,
-              subscribers
-            )
-
-          case PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo)
-              if walletId == id && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
-            val currentBalance = wallet.balance
-            if (currentBalance.sub(money) < Balance.zero)
-              replyTo.foreach(_ ! PayFailed("Can not trade because the balance after trading is less than 0"))
-            else
-              replyTo.foreach(_ ! PaySucceeded)
-            fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
-            onInitialized(
-              wallet.subtract(money),
-              requests.filterNot(maybeChargeId.contains),
-              subscribers
-            )
-
-          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
-            if (requests.size > requestsLimit)
-              replyTo.foreach(_ ! ChargeFailed("Limit over"))
-            else
-              replyTo.foreach(_ ! ChargeSucceeded)
-            fireEventToSubscribers(WalletCharged(questId, walletId, money, instant))
-            onInitialized(
-              wallet,
-              requests :+ rr,
-              subscribers
-            )
-
-        }
-      }
-      onUninitialized(Vector.empty)
-    }
+    onUninitialized(id, requestsLimit, Vector.empty)
 
 }

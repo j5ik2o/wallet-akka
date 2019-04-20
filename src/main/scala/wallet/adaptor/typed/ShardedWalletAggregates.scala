@@ -19,7 +19,6 @@ object ShardedWalletAggregates {
           WalletAggregates.behavior(requestLimit)(PersistentWalletAggregate.behavior),
           name = WalletAggregates.name
         )
-        ctx.watch(childRef)
         ctx.setReceiveTimeout(receiveTimeout, Idle)
         Behaviors.receiveMessage[CommandRequest] {
           case Idle =>
@@ -34,19 +33,13 @@ object ShardedWalletAggregates {
       }
   }
 
-  def initClusterSharding(
+  def initEntityActor(
       clusterSharding: ClusterSharding,
       requestLimit: Int,
       receiveTimeout: FiniteDuration
-  ): ActorRef[ShardingEnvelope[CommandRequest]] = {
-    val shardRegion: ActorRef[ShardingEnvelope[CommandRequest]] =
-      clusterSharding.init(
-        Entity(
-          typeKey = TypeKey,
-          createBehavior = behavior(requestLimit, receiveTimeout)
-        ).withStopMessage(Stop)
-      )
-    shardRegion
-  }
+  ): ActorRef[ShardingEnvelope[CommandRequest]] =
+    clusterSharding.init(
+      Entity(typeKey = TypeKey, createBehavior = behavior(requestLimit, receiveTimeout)).withStopMessage(Stop)
+    )
 
 }

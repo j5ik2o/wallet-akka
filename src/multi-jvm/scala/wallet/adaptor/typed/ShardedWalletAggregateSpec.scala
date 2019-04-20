@@ -47,10 +47,10 @@ class ShardedWalletAggregateSpec
     }
     "join cluster" in within(15 seconds) {
       join(node1, node1) {
-        ShardedWalletAggregates.initClusterSharding(ClusterSharding(typedSystem), 10, 1 hours)
+        ShardedWalletAggregates.initEntityActor(ClusterSharding(typedSystem), 10, 1 hours)
       }
       join(node2, node1) {
-        ShardedWalletAggregates.initClusterSharding(ClusterSharding(typedSystem), 10, 1 hours)
+        ShardedWalletAggregates.initEntityActor(ClusterSharding(typedSystem), 10, 1 hours)
       }
       enterBarrier("after-2")
     }

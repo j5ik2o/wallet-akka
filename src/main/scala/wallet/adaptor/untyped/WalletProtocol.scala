@@ -99,7 +99,4 @@ object WalletProtocol {
   // 購読者
   case class AddSubscribers(id: CommandId, walletId: WalletId, subscribers: Vector[ActorRef]) extends CommandRequest
 
-  // シャットダウン
-  case class Shutdown(id: CommandId, walletId: WalletId) extends CommandRequest
-
 }

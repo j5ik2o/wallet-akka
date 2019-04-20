@@ -42,7 +42,7 @@ class ShardedWalletAggregatesSpec
       eventually {
         cluster.selfMember.status shouldEqual MemberStatus.Up
       }
-      ShardedWalletAggregates.initClusterSharding(clusterSharding, 10, 1 hours)
+      ShardedWalletAggregates.initEntityActor(clusterSharding, 10, 1 hours)
 
       val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
       val walletId  = newULID

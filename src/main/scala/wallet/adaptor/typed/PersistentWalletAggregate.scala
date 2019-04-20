@@ -9,42 +9,34 @@ import wallet.adaptor.typed.WalletProtocol._
 
 object PersistentWalletAggregate {
 
-  private val eventHandler: (State, Event) => State = { (state, event) =>
-    state.childRef ! event.toCommandRequest
-    state
-  }
-
-  private val commandHandler: (State, CommandRequest) => Effect[Event, State] = { (state, command) =>
-    command match {
-      case commandRequest: CommandRequest with ToEvent =>
-        state.childRef ! commandRequest
-        Effect.persist(commandRequest.toEvent)
-      case commandRequest: CommandRequest =>
-        state.childRef ! commandRequest
-        Effect.none
-    }
-  }
-
   case class State(childRef: ActorRef[CommandRequest])
-
-  def behavior(id: WalletId): Behavior[CommandRequest] = behavior(id, Int.MaxValue)
 
   def behavior(
       id: WalletId,
-      requestsLimit: Int
+      requestsLimit: Int = Int.MaxValue
   ): Behavior[CommandRequest] =
     Behaviors
-      .supervise(Behaviors.setup[CommandRequest] { context =>
+      .supervise(Behaviors.setup[CommandRequest] { ctx =>
         val childRef: ActorRef[CommandRequest] =
-          context.spawn(WalletAggregate.behavior(id, requestsLimit), WalletAggregate.name(id))
-        context.watch(childRef)
+          ctx.spawn(WalletAggregate.behavior(id, requestsLimit), WalletAggregate.name(id))
+        ctx.watch(childRef)
         EventSourcedBehavior[CommandRequest, Event, State](
           persistenceId = PersistenceId("p-" + id.toString),
           emptyState = State(childRef),
-          commandHandler,
-          eventHandler
+          commandHandler = {
+            case (state, commandRequest: CommandRequest with ToEvent) =>
+              state.childRef ! commandRequest
+              Effect.persist(commandRequest.toEvent)
+            case (state, commandRequest: CommandRequest) =>
+              state.childRef ! commandRequest
+              Effect.none
+          },
+          eventHandler = { (state, event) =>
+            state.childRef ! event.toCommandRequest
+            state
+          }
         ).receiveSignal {
-          case (_, Terminated(c)) if c.compareTo(childRef) == 0 =>
+          case (_, Terminated(c)) if c == childRef =>
             Behaviors.stopped
         }
       }).onFailure[Throwable](SupervisorStrategy.stop)

@@ -1,9 +1,12 @@
 package wallet.adaptor.untyped
 
+import java.time.Instant
+
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import wallet.WalletId
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{ Balance, Wallet }
+import wallet.domain.{ Balance, Charge, Wallet }
+import wallet.newULID
 
 object WalletAggregate {
 
@@ -14,97 +17,97 @@ object WalletAggregate {
 
 }
 
-private[untyped] final class WalletAggregate(id: WalletId, requestsLimit: Int) extends Actor with ActorLogging {
-
-  private def getWallet(w: Option[Wallet]): Wallet =
-    w.getOrElse(throw new IllegalStateException("Invalid state"))
+private[untyped] final class WalletAggregate(id: WalletId, chargesLimit: Int) extends Actor with ActorLogging {
 
   private def fireEvent(subscribers: Vector[ActorRef])(event: Event): Unit =
     subscribers.foreach(_ ! event)
 
-  override def receive: Receive = onMessage(None, Vector.empty, Vector.empty)
+  override def receive: Receive = onUninitialized(id, chargesLimit, Vector.empty)
 
-  private def onMessage(
-      maybeWallet: Option[Wallet],
-      requests: Vector[ChargeRequest],
-      subscribers: Vector[ActorRef]
-  ): Receive = {
-    case m @ GetBalanceRequest(_, walletId) if walletId == id =>
-      log.debug(s"message = $m")
-      sender() ! GetBalanceResponse(getWallet(maybeWallet).balance)
-
+  private def onUninitialized(id: WalletId, chargesLimit: Int, subscribers: Vector[ActorRef]): Receive = {
     case m @ AddSubscribers(_, walletId, s) if walletId == id =>
       log.debug(s"message = $m")
-      context.become(onMessage(maybeWallet, requests, subscribers ++ s))
+      context.become(onUninitialized(id, chargesLimit, subscribers ++ s))
 
     case m @ CreateWalletRequest(_, walletId, createdAt, noReply) if walletId == id =>
       log.debug(s"message = $m")
       if (!noReply) {
-        if (maybeWallet.isEmpty)
-          sender() ! CreateWalletSucceeded
-        else
-          sender() ! CreateWalletFailed("Already created")
+        sender() ! CreateWalletSucceeded
       }
       fireEvent(subscribers)(WalletCreated(walletId, createdAt))
-      context.become(onMessage(Some(Wallet(id, Balance.zero)), requests, subscribers))
+      val now = Instant.now
+      context.become(onInitialized(Wallet(id, chargesLimit, Balance.zero, Vector.empty, now, now), subscribers))
+  }
+
+  private def onInitialized(
+      wallet: Wallet,
+      subscribers: Vector[ActorRef]
+  ): Receive = {
+    case m @ GetBalanceRequest(_, walletId) if walletId == id =>
+      log.debug(s"message = $m")
+      sender() ! GetBalanceResponse(wallet.balance)
+
+    case m @ CreateWalletRequest(_, walletId, _, noReply) if walletId == id =>
+      log.debug(s"message = $m")
+      if (!noReply)
+        sender() ! CreateWalletFailed("Already created")
 
     case m @ DepositRequest(_, walletId, money, instant, noReply) if walletId == id =>
       log.debug(s"message = $m")
-      val currentBalance = getWallet(maybeWallet).balance
-      if (!noReply) {
-        if (currentBalance.add(money) < Balance.zero)
-          sender() ! DepositFailed("Can not trade because the balance after trading is less than 0")
-        else
-          sender() ! DepositSucceeded
+      wallet.deposit(money, instant) match {
+        case Left(t) =>
+          if (!noReply)
+            sender() ! DepositFailed(t.getMessage)
+        case Right(newWallet) =>
+          if (!noReply)
+            sender() ! DepositSucceeded
+          fireEvent(subscribers)(WalletDeposited(walletId, money, instant))
+          context.become(
+            onInitialized(
+              newWallet,
+              subscribers
+            )
+          )
       }
-      fireEvent(subscribers)(WalletDeposited(walletId, money, instant))
-      context.become(
-        onMessage(
-          maybeWallet.map(_.add(money)),
-          requests,
-          subscribers
-        )
-      )
 
-    case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply)
-        if walletId == id && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
+    case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply) if walletId == id =>
       log.debug(s"message = $m")
-      val currentBalance = getWallet(maybeWallet).balance
-      if (!noReply) {
-        if (currentBalance.sub(money) < Balance.zero)
-          sender() ! PayFailed("Can not trade because the balance after trading is less than 0")
-        else
-          sender() ! PaySucceeded
+      wallet.pay(money, maybeChargeId, instant) match {
+        case Left(t) =>
+          if (!noReply)
+            sender() ! PayFailed(t.getMessage)
+        case Right(newWallet) =>
+          if (!noReply)
+            sender() ! PaySucceeded
+          fireEvent(subscribers)(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
+          context.become(
+            onInitialized(
+              newWallet,
+              subscribers
+            )
+          )
+
       }
-      fireEvent(subscribers)(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
-      context.become(
-        onMessage(
-          maybeWallet.map(_.subtract(money)),
-          requests.filterNot(maybeChargeId.contains),
-          subscribers
-        )
-      )
 
     case rr @ ChargeRequest(_, chargeId, walletId, money, instant, noReply) if walletId == id =>
       log.debug(s"message = $rr")
-      if (!noReply) {
-        if (requests.size > requestsLimit)
-          sender() ! ChargeFailed("Limit over")
-        else
-          sender() ! ChargeSucceeded
-      }
-      fireEvent(subscribers)(WalletCharged(chargeId, walletId, money, instant))
-      context.become(
-        onMessage(
-          maybeWallet,
-          requests :+ rr,
-          subscribers
-        )
-      )
+      wallet.addCharge(Charge(newULID, walletId, money, instant), instant) match {
+        case Left(t) =>
+          if (!noReply)
+            sender() ! ChargeFailed(t.getMessage)
+        case Right(newWallet) =>
+          if (!noReply)
+            sender() ! ChargeSucceeded
+          fireEvent(subscribers)(WalletCharged(chargeId, walletId, money, instant))
+          context.become(
+            onInitialized(
+              newWallet,
+              subscribers
+            )
+          )
 
-    case m @ Shutdown(_, walletId) if walletId == id =>
-      log.debug(s"message = $m")
-      context.stop(self)
+      }
+
   }
 
 }
