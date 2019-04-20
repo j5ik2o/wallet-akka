@@ -24,71 +24,79 @@ object WalletAggregate {
       requestsLimit: Int = Int.MaxValue
   ): Behavior[CommandRequest] =
     Behaviors.setup[CommandRequest] { ctx =>
-      def onMessage(
-          maybeWallet: Option[Wallet],
+      def onUninitialized(
+          subscribers: Vector[ActorRef[Event]]
+      ): Behaviors.Receive[CommandRequest] = {
+        val fireEventToSubscribers = fireEvent(subscribers) _
+        Behaviors.receiveMessage[CommandRequest] {
+          case AddSubscribers(_, walletId, s) if walletId == id =>
+            onUninitialized(subscribers ++ s)
+          case CreateWalletRequest(_, walletId, createdAt, replyTo) if walletId == id =>
+            replyTo.foreach(_ ! CreateWalletSucceeded)
+            fireEventToSubscribers(WalletCreated(walletId, createdAt))
+            onInitialized(Wallet(walletId, Balance.zero), Vector.empty, subscribers)
+        }
+      }
+      def onInitialized(
+          wallet: Wallet,
           requests: Vector[ChargeRequest],
           subscribers: Vector[ActorRef[Event]]
       ): Behaviors.Receive[CommandRequest] = {
         val fireEventToSubscribers = fireEvent(subscribers) _
         Behaviors.receiveMessage[CommandRequest] {
-          case GetBalanceRequest(_, walletId, replyTo) if isReceive(maybeWallet, id, walletId) =>
-            replyTo ! GetBalanceResponse(getWallet(maybeWallet).balance)
+          case GetBalanceRequest(_, walletId, replyTo) if walletId == id =>
+            replyTo ! GetBalanceResponse(wallet.balance)
             Behaviors.same
 
           case AddSubscribers(_, walletId, s) if walletId == id =>
-            onMessage(maybeWallet, requests, subscribers ++ s)
+            onInitialized(wallet, requests, subscribers ++ s)
 
-          case CreateWalletRequest(_, walletId, createdAt, replyTo) =>
-            if (maybeWallet.isEmpty)
-              replyTo.foreach(_ ! CreateWalletSucceeded)
-            else
-              replyTo.foreach(_ ! CreateWalletFailed("Already created"))
-            fireEventToSubscribers(WalletCreated(walletId, createdAt))
-            onMessage(Some(Wallet(walletId, Balance.zero)), requests, subscribers)
+          case CreateWalletRequest(_, _, _, replyTo) =>
+            replyTo.foreach(_ ! CreateWalletFailed("Already created"))
+            Behaviors.same
 
-          case DepositRequest(_, walletId, money, instant, replyTo) if isReceive(maybeWallet, id, walletId) =>
-            val currentBalance = getWallet(maybeWallet).balance
+          case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
+            val currentBalance = wallet.balance
             if (currentBalance.add(money) < Balance.zero)
               replyTo.foreach(_ ! DepositFailed("Can not trade because the balance after trading is less than 0"))
             else
               replyTo.foreach(_ ! DepositSucceeded)
             fireEventToSubscribers(WalletDeposited(walletId, money, instant))
-            onMessage(
-              maybeWallet.map(_.add(money)),
+            onInitialized(
+              wallet.add(money),
               requests,
               subscribers
             )
 
           case PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo)
-              if isReceive(maybeWallet, id, walletId) && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
-            val currentBalance = getWallet(maybeWallet).balance
+              if walletId == id && maybeChargeId.fold(true)(requests.map(_.walletId).contains) =>
+            val currentBalance = wallet.balance
             if (currentBalance.sub(money) < Balance.zero)
               replyTo.foreach(_ ! PayFailed("Can not trade because the balance after trading is less than 0"))
             else
               replyTo.foreach(_ ! PaySucceeded)
             fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
-            onMessage(
-              maybeWallet.map(_.subtract(money)),
+            onInitialized(
+              wallet.subtract(money),
               requests.filterNot(maybeChargeId.contains),
               subscribers
             )
 
-          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo)
-              if isReceive(maybeWallet, id, walletId) =>
+          case rr @ ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
             if (requests.size > requestsLimit)
               replyTo.foreach(_ ! ChargeFailed("Limit over"))
             else
               replyTo.foreach(_ ! ChargeSucceeded)
             fireEventToSubscribers(WalletCharged(questId, walletId, money, instant))
-            onMessage(
-              maybeWallet,
+            onInitialized(
+              wallet,
               requests :+ rr,
               subscribers
             )
 
         }
       }
-      onMessage(None, Vector.empty, Vector.empty)
+      onUninitialized(Vector.empty)
     }
 
 }
