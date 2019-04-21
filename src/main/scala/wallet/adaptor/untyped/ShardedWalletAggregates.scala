@@ -9,8 +9,8 @@ import wallet.adaptor.untyped.WalletProtocol.CommandRequest
 
 object ShardedWalletAggregates {
 
-  def props(requestsLimit: Int, propsF: (ULID, Int) => Props): Props =
-    Props(new ShardedWalletAggregates(requestsLimit, propsF))
+  def props(chargesLimit: Int, propsF: (ULID, Int) => Props): Props =
+    Props(new ShardedWalletAggregates(chargesLimit, propsF))
 
   def name(id: WalletId): String = id.toString
 
@@ -31,9 +31,9 @@ object ShardedWalletAggregates {
 }
 
 final class ShardedWalletAggregates(
-    requestsLimit: Int,
+    chargesLimit: Int,
     propsF: (ULID, Int) => Props
-) extends WalletAggregates(requestsLimit, propsF) {
+) extends WalletAggregates(chargesLimit, propsF) {
   import ShardedWalletAggregates._
 
   context.setReceiveTimeout(Settings(context.system).passivateTimeout)

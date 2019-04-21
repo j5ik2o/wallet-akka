@@ -8,15 +8,18 @@ import wallet.adaptor.typed.WalletProtocol.{ CommandRequest, Idle, Stop }
 
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * WalletAggregatesアクターをクラスターシャーディングするアクター。
+  */
 object ShardedWalletAggregates {
 
   val TypeKey: EntityTypeKey[CommandRequest] = EntityTypeKey[CommandRequest]("wallets")
 
-  private def behavior(requestLimit: Int, receiveTimeout: FiniteDuration): EntityContext => Behavior[CommandRequest] = {
+  private def behavior(chargesLimit: Int, receiveTimeout: FiniteDuration): EntityContext => Behavior[CommandRequest] = {
     entityContext =>
       Behaviors.setup[CommandRequest] { ctx =>
         val childRef = ctx.spawn(
-          WalletAggregates.behavior(requestLimit)(PersistentWalletAggregate.behavior),
+          WalletAggregates.behavior(WalletAggregate.name, chargesLimit)(PersistentWalletAggregate.behavior),
           name = WalletAggregates.name
         )
         ctx.setReceiveTimeout(receiveTimeout, Idle)
@@ -33,13 +36,21 @@ object ShardedWalletAggregates {
       }
   }
 
+  /**
+    *
+    *
+    * @param clusterSharding [[ClusterSharding]]
+    * @param chargesLimit
+    * @param receiveTimeout
+    * @return
+    */
   def initEntityActor(
       clusterSharding: ClusterSharding,
-      requestLimit: Int,
+      chargesLimit: Int,
       receiveTimeout: FiniteDuration
   ): ActorRef[ShardingEnvelope[CommandRequest]] =
     clusterSharding.init(
-      Entity(typeKey = TypeKey, createBehavior = behavior(requestLimit, receiveTimeout)).withStopMessage(Stop)
+      Entity(typeKey = TypeKey, createBehavior = behavior(chargesLimit, receiveTimeout)).withStopMessage(Stop)
     )
 
 }

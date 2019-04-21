@@ -8,6 +8,9 @@ import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.domain.{ Balance, Charge, Wallet }
 
+/**
+  * ウォレット集約アクター。
+  */
 object WalletAggregate {
 
   private def fireEvent(subscribers: Vector[ActorRef[Event]])(event: Event): Unit =
@@ -100,8 +103,8 @@ object WalletAggregate {
 
   def behavior(
       id: WalletId,
-      requestsLimit: Int = Int.MaxValue
+      chargesLimit: Int = Int.MaxValue
   ): Behavior[CommandRequest] =
-    onUninitialized(id, requestsLimit, Vector.empty)
+    onUninitialized(id, chargesLimit, Vector.empty)
 
 }

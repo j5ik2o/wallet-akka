@@ -59,7 +59,7 @@ class PersistentWalletAggregateSpec
       "deposit" in {
         val walletId = newULID
         // 永続化アクターを起動
-        val walletRef = spawn(WalletAggregates.behavior()(PersistentWalletAggregate.behavior))
+        val walletRef = spawn(WalletAggregates.behavior(WalletAggregate.name)(PersistentWalletAggregate.behavior))
 
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
         walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))

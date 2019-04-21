@@ -7,6 +7,6 @@ import wallet.adaptor.typed.WalletProtocol._
 class WalletAggregatesSpec extends WalletAggregateSpec {
 
   override def newWalletRef(id: WalletId): ActorRef[CommandRequest] =
-    spawn(WalletAggregates.behavior()(WalletAggregate.behavior))
+    spawn(WalletAggregates.behavior(WalletAggregate.name)(WalletAggregate.behavior))
 
 }

@@ -7,18 +7,21 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
 
+/**
+  * 永続化に対応したウォレット集約アクター。
+  */
 object PersistentWalletAggregate {
 
   case class State(childRef: ActorRef[CommandRequest])
 
   def behavior(
       id: WalletId,
-      requestsLimit: Int = Int.MaxValue
+      chargesLimit: Int = Int.MaxValue
   ): Behavior[CommandRequest] =
     Behaviors
       .supervise(Behaviors.setup[CommandRequest] { ctx =>
         val childRef: ActorRef[CommandRequest] =
-          ctx.spawn(WalletAggregate.behavior(id, requestsLimit), WalletAggregate.name(id))
+          ctx.spawn(WalletAggregate.behavior(id, chargesLimit), WalletAggregate.name(id))
         ctx.watch(childRef)
         EventSourcedBehavior[CommandRequest, Event, State](
           persistenceId = PersistenceId("p-" + id.toString),

@@ -8,17 +8,17 @@ import wallet.adaptor.untyped.WalletProtocol._
 
 object PersistentWalletAggregate {
 
-  def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new PersistentWalletAggregate(id, requestsLimit)(WalletAggregate.props))
+  def props(id: WalletId, chargesLimit: Int = Int.MaxValue): Props =
+    Props(new PersistentWalletAggregate(id, chargesLimit)(WalletAggregate.props))
 }
 
 /**
   * 委譲によってWalletAggregateに永続化機能を付与するアクター。
   *
   * @param id
-  * @param requestsLimit
+  * @param chargesLimit
   */
-private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLimit: Int)(
+private[untyped] final class PersistentWalletAggregate(id: WalletId, chargesLimit: Int)(
     propsF: (WalletId, Int) => Props
 ) extends PersistentActor
     with ActorLogging {
@@ -29,7 +29,7 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, requestsLim
   }
 
   private val childRef =
-    context.actorOf(propsF(id, requestsLimit), name = WalletAggregate.name(id))
+    context.actorOf(propsF(id, chargesLimit), name = WalletAggregate.name(id))
 
   context.watch(childRef)
 

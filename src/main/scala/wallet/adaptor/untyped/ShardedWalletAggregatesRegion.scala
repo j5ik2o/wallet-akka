@@ -5,10 +5,10 @@ import akka.cluster.sharding.{ ClusterSharding, ClusterShardingSettings }
 
 object ShardedWalletAggregatesRegion {
 
-  def startClusterSharding(requestLimit: Int)(implicit system: ActorSystem): ActorRef =
+  def startClusterSharding(chargesLimit: Int)(implicit system: ActorSystem): ActorRef =
     ClusterSharding(system).start(
       ShardedWalletAggregates.shardName,
-      ShardedWalletAggregates.props(requestLimit, PersistentWalletAggregate.props),
+      ShardedWalletAggregates.props(chargesLimit, PersistentWalletAggregate.props),
       ClusterShardingSettings(system),
       ShardedWalletAggregates.extractEntityId,
       ShardedWalletAggregates.extractShardId

@@ -10,13 +10,16 @@ import wallet.newULID
 
 object WalletAggregate {
 
-  def props(id: WalletId, requestsLimit: Int = Int.MaxValue): Props =
-    Props(new WalletAggregate(id, requestsLimit))
+  def props(id: WalletId, chargesLimit: Int = Int.MaxValue): Props =
+    Props(new WalletAggregate(id, chargesLimit))
 
   def name(id: WalletId): String = "wallet-untyped-" + id.toString
 
 }
 
+/**
+  * ウォレット集約アクター。
+  */
 private[untyped] final class WalletAggregate(id: WalletId, chargesLimit: Int) extends Actor with ActorLogging {
 
   private def fireEvent(subscribers: Vector[ActorRef])(event: Event): Unit =

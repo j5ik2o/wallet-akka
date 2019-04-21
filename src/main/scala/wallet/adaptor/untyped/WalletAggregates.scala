@@ -6,15 +6,15 @@ import wallet.adaptor.utils.ChildActorLookup
 
 object WalletAggregates {
 
-  def props(requestsLimit: Int = Int.MaxValue)(
+  def props(chargesLimit: Int = Int.MaxValue)(
       propsF: (ULID, Int) => Props
   ): Props =
-    Props(new WalletAggregates(requestsLimit, propsF))
+    Props(new WalletAggregates(chargesLimit, propsF))
 
 }
 
 private[untyped] class WalletAggregates(
-    requestsLimit: Int,
+    chargesLimit: Int,
     propsF: (ULID, Int) => Props
 ) extends Actor
     with ActorLogging
@@ -27,7 +27,7 @@ private[untyped] class WalletAggregates(
 
   override protected def childName(childId: ULID): String = WalletAggregate.name(childId)
 
-  override protected def childProps(childId: ULID): Props = propsF(childId, requestsLimit)
+  override protected def childProps(childId: ULID): Props = propsF(childId, chargesLimit)
 
   override protected def toChildId(commandRequest: CommandRequest): CommandId = commandRequest.walletId
 
