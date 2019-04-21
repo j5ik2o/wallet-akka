@@ -7,7 +7,7 @@ import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, EntityRef }
 import akka.{ actor => untyped }
 import wallet.adaptor.typed.{ ShardedWalletAggregates, WalletProtocol }
 import wallet.adaptor.typed.WalletProtocol.{ CreateWalletRequest, DepositRequest }
-import wallet.domain.Money
+import wallet.domain.{ Money, WalletId }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -19,10 +19,10 @@ object Main extends App {
 
   ShardedWalletAggregates.initEntityActor(clusterSharding, 256, 1 hours)
 
-  val walletId = wallet.newULID
+  val walletId = WalletId(wallet.newULID)
 
   val walletRef: EntityRef[WalletProtocol.CommandRequest] =
-    clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+    clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.value.toString)
 
   walletRef ! CreateWalletRequest(wallet.newULID, walletId, Instant.now, None)
   walletRef ! DepositRequest(wallet.newULID, walletId, Money(BigDecimal(100)), Instant.now, None)

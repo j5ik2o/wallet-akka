@@ -4,7 +4,7 @@ import akka.actor.SupervisorStrategy.Stop
 import akka.actor.{ ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
 import akka.persistence.{ PersistentActor, RecoveryCompleted }
 import wallet._
-import wallet.adaptor.untyped.WalletProtocol._
+import wallet.adaptor.untyped.WalletProtocol.{ CommandRequest, Event, ToEvent }
 
 object PersistentWalletAggregate {
 
@@ -13,10 +13,9 @@ object PersistentWalletAggregate {
 }
 
 /**
-  * 委譲によってWalletAggregateに永続化機能を付与するアクター。
+  * 永続化に対応したウォレット集約アクター。
   *
-  * @param id
-  * @param chargesLimit
+  * @param chargesLimit 受け付けられる最大の請求件数
   */
 private[untyped] final class PersistentWalletAggregate(id: WalletId, chargesLimit: Int)(
     propsF: (WalletId, Int) => Props
@@ -35,40 +34,18 @@ private[untyped] final class PersistentWalletAggregate(id: WalletId, chargesLimi
 
   override def persistenceId: String = "p-" + WalletAggregate.name(id)
 
-  // TODO: ドメインイベントにコマンドを生成するメソッドがあればロジックがすっきりするかも
   override def receiveRecover: Receive = {
-    case e: WalletCreated =>
-      childRef ! CreateWalletRequest(newULID, e.walletId, e.occurredAt, noReply = true)
-    case e: WalletDeposited =>
-      childRef ! DepositRequest(newULID, e.walletId, e.money, e.occurredAt, noReply = true)
-    case e: WalletCharged =>
-      childRef ! ChargeRequest(newULID, e.chargeId, e.walletId, e.money, e.occurredAt, noReply = true)
-    case e: WalletPayed =>
-      childRef ! PayRequest(newULID, e.walletId, e.toWalletId, e.money, e.chargeId, e.occurredAt, noReply = true)
+    case e: Event =>
+      childRef ! e.toCommandRequest
     case RecoveryCompleted =>
       log.debug("recovery completed")
   }
 
-  // TODO: コマンドリクエストにドメインイベントを生成するメソッドがあればロジックがすっきりするかも
   override def receiveCommand: Receive = {
-    case event: Event =>
-      ()
     case Terminated(c) if c == childRef =>
       context.stop(self)
-    case m: CreateWalletRequest =>
-      persist(WalletCreated(m.walletId, m.createdAt)) { _ =>
-        childRef forward m
-      }
-    case m: DepositRequest =>
-      persist(WalletDeposited(m.walletId, m.money, m.createdAt)) { _ =>
-        childRef forward m
-      }
-    case m: ChargeRequest =>
-      persist(WalletCharged(m.chargeId, m.walletId, m.money, m.createdAt)) { _ =>
-        childRef forward m
-      }
-    case m: PayRequest =>
-      persist(WalletPayed(m.walletId, m.toWalletId, m.money, m.chargeId, m.createdAt)) { _ =>
+    case m: CommandRequest with ToEvent =>
+      persist(m.toEvent) { _ =>
         childRef forward m
       }
     case m =>

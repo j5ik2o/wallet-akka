@@ -3,23 +3,23 @@ package wallet.adaptor.untyped
 import akka.actor._
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.Passivate
-import wallet.{ ULID, WalletId }
+import wallet.WalletId
 import wallet.adaptor.Settings
 import wallet.adaptor.untyped.WalletProtocol.CommandRequest
 
 object ShardedWalletAggregates {
 
-  def props(chargesLimit: Int, propsF: (ULID, Int) => Props): Props =
+  def props(chargesLimit: Int, propsF: (WalletId, Int) => Props): Props =
     Props(new ShardedWalletAggregates(chargesLimit, propsF))
 
-  def name(id: WalletId): String = id.toString
+  def name(id: WalletId): String = id.value.toString
 
   val shardName = "wallets"
 
   case object StopWallet
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case cmd: CommandRequest => (cmd.walletId.toString, cmd)
+    case cmd: CommandRequest => (cmd.walletId.value.toString, cmd)
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
@@ -32,7 +32,7 @@ object ShardedWalletAggregates {
 
 final class ShardedWalletAggregates(
     chargesLimit: Int,
-    propsF: (ULID, Int) => Props
+    propsF: (WalletId, Int) => Props
 ) extends WalletAggregates(chargesLimit, propsF) {
   import ShardedWalletAggregates._
 

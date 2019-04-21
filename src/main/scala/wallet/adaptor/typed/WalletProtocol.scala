@@ -102,8 +102,8 @@ object WalletProtocol {
   // 請求
   case class ChargeRequest(
       id: CommandId,
-      chargeId: ChargeId,
       walletId: WalletId,
+      chargeId: ChargeId,
       money: Money,
       createdAt: Instant,
       replyTo: Option[ActorRef[ChargeResponse]] = None
@@ -119,7 +119,7 @@ object WalletProtocol {
   case class ChargeFailed(message: String) extends ChargeResponse
 
   case class WalletCharged(chargeId: ChargeId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event {
-    override def toCommandRequest: CommandRequest = ChargeRequest(newULID, chargeId, walletId, money, Instant.now)
+    override def toCommandRequest: CommandRequest = ChargeRequest(newULID, walletId, chargeId, money, Instant.now)
   }
 
   // 残高確認

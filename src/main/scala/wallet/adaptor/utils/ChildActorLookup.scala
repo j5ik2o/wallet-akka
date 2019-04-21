@@ -16,7 +16,6 @@ trait ChildActorLookup extends ActorLogging { this: Actor =>
   protected def forwardToActor: Actor.Receive = {
     case _cmd =>
       val cmd = _cmd.asInstanceOf[CommandRequest]
-      log.info(s"cmd = $cmd")
       context
         .child(childName(toChildId(cmd)))
         .fold(createAndForward(cmd, toChildId(cmd)))(forwardCommand(cmd))

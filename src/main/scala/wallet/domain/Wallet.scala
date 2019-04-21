@@ -2,10 +2,12 @@ package wallet.domain
 
 import java.time.Instant
 
-import wallet.{ ChargeId, ULID }
+import wallet.ULID
+
+final case class WalletId(value: ULID) extends IDSupport
 
 final case class Wallet(
-    id: ULID,
+    id: WalletId,
     chargesLimit: Int,
     balance: Balance,
     charges: Vector[Charge],

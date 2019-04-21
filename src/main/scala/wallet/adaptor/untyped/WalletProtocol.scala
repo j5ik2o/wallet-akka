@@ -5,23 +5,32 @@ import java.time.Instant
 import akka.actor.ActorRef
 import wallet.domain.{ Balance, Money }
 import wallet.{ ChargeId, CommandId, WalletId }
+import wallet.newULID
 
 object WalletProtocol {
 
   sealed trait Message
   sealed trait Event extends Message {
     def occurredAt: Instant
+    def toCommandRequest: CommandRequest
   }
   sealed trait CommandMessage extends Message
   sealed trait CommandRequest extends CommandMessage {
     def id: CommandId
     def walletId: WalletId
   }
+
+  trait ToEvent { this: CommandRequest =>
+    def toEvent: Event
+  }
   sealed trait CommandResponse extends CommandMessage
 
   // 作成
   case class CreateWalletRequest(id: CommandId, walletId: WalletId, createdAt: Instant, noReply: Boolean = false)
       extends CommandRequest
+      with ToEvent {
+    override def toEvent: Event = WalletCreated(walletId, createdAt)
+  }
 
   sealed trait CreateWalletResponse extends CommandResponse
 
@@ -29,7 +38,9 @@ object WalletProtocol {
 
   case class CreateWalletFailed(message: String) extends CreateWalletResponse
 
-  case class WalletCreated(walletId: WalletId, occurredAt: Instant) extends Event
+  case class WalletCreated(walletId: WalletId, occurredAt: Instant) extends Event {
+    override def toCommandRequest: CommandRequest = CreateWalletRequest(newULID, walletId, occurredAt, noReply = true)
+  }
 
   // 入金
   case class DepositRequest(
@@ -39,6 +50,9 @@ object WalletProtocol {
       createdAt: Instant,
       noReply: Boolean = false
   ) extends CommandRequest
+      with ToEvent {
+    override def toEvent: Event = WalletDeposited(walletId, money, createdAt)
+  }
 
   sealed trait DepositResponse extends CommandResponse
 
@@ -46,7 +60,9 @@ object WalletProtocol {
 
   case class DepositFailed(message: String) extends DepositResponse
 
-  case class WalletDeposited(walletId: WalletId, money: Money, occurredAt: Instant) extends Event
+  case class WalletDeposited(walletId: WalletId, money: Money, occurredAt: Instant) extends Event {
+    override def toCommandRequest: CommandRequest = DepositRequest(newULID, walletId, money, occurredAt, noReply = true)
+  }
 
   // 支払い
   case class PayRequest(
@@ -58,6 +74,9 @@ object WalletProtocol {
       createdAt: Instant,
       noReply: Boolean = false
   ) extends CommandRequest
+      with ToEvent {
+    override def toEvent: Event = WalletPayed(walletId, toWalletId, money, chargeId, createdAt)
+  }
 
   sealed trait PayResponse extends CommandResponse
 
@@ -71,17 +90,23 @@ object WalletProtocol {
       money: Money,
       chargeId: Option[ChargeId],
       occurredAt: Instant
-  ) extends Event
+  ) extends Event {
+    override def toCommandRequest: CommandRequest =
+      PayRequest(newULID, walletId, toWalletId, money, chargeId, occurredAt, noReply = true)
+  }
 
   // 請求
   case class ChargeRequest(
       id: CommandId,
-      chargeId: ChargeId,
       walletId: WalletId,
+      chargeId: ChargeId,
       money: Money,
       createdAt: Instant,
       noReply: Boolean = false
   ) extends CommandRequest
+      with ToEvent {
+    override def toEvent: Event = WalletCharged(walletId, chargeId, money, createdAt)
+  }
 
   sealed trait ChargeResponse extends CommandResponse
 
@@ -89,7 +114,10 @@ object WalletProtocol {
 
   case class ChargeFailed(message: String) extends ChargeResponse
 
-  case class WalletCharged(chargeId: ChargeId, walletId: WalletId, money: Money, occurredAt: Instant) extends Event
+  case class WalletCharged(walletId: WalletId, chargeId: ChargeId, money: Money, occurredAt: Instant) extends Event {
+    override def toCommandRequest: CommandRequest =
+      ChargeRequest(newULID, walletId, chargeId, money, occurredAt, noReply = true)
+  }
 
   // 残高確認
   case class GetBalanceRequest(id: CommandId, walletId: WalletId) extends CommandRequest

@@ -4,7 +4,7 @@ import java.time.Instant
 
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.Money
+import wallet.domain.{ Money, WalletId }
 
 /**
   * PesistentActorの単体テスト。
@@ -18,7 +18,7 @@ class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
   "PersistentWalletAggregate" - {
     "directly" - {
       "deposit" in {
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         // 永続化アクターを起動
         val walletRef = system.actorOf(PersistentWalletAggregate.props(walletId))
 
@@ -28,6 +28,9 @@ class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
         val money = Money(BigDecimal(100))
         walletRef ! DepositRequest(newULID, walletId, money, Instant.now)
         expectMsg(DepositSucceeded)
+
+        walletRef ! GetBalanceRequest(newULID, walletId)
+        expectMsgType[GetBalanceResponse]
 
         // アクターを停止する
         killActors(walletRef)
@@ -43,7 +46,7 @@ class PersistentWalletAggregateSpec extends AkkaSpec with PersistenceCleanup {
     }
     "via WalletAggregates" - {
       "deposit" in {
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         // 永続化アクターを起動
         val walletRef = system.actorOf(WalletAggregates.props()(PersistentWalletAggregate.props))
 

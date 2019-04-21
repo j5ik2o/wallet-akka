@@ -2,14 +2,15 @@ package wallet.adaptor.untyped
 
 import java.time.Instant
 
-import akka.actor.{ActorIdentity, Identify, Props}
+import akka.actor.{ ActorIdentity, Identify, Props }
 import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import wallet._
-import wallet.adaptor.untyped.WalletProtocol.{CreateWalletRequest, CreateWalletSucceeded}
-import wallet.adaptor.{MultiNodeSampleConfig, STMultiNodeSpecSupport}
+import wallet.adaptor.untyped.WalletProtocol.{ CreateWalletRequest, CreateWalletSucceeded }
+import wallet.adaptor.{ MultiNodeSampleConfig, STMultiNodeSpecSupport }
+import wallet.domain.WalletId
 
 import scala.concurrent.duration._
 
@@ -50,14 +51,14 @@ class ShardedWalletAggregateSpec
     "createWallet" in {
       runOn(node1) {
         val region   = ShardedWalletAggregatesRegion.shardRegion
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         region ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
       }
       enterBarrier("after-3")
       runOn(node2) {
         val region   = ShardedWalletAggregatesRegion.shardRegion
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         region ! CreateWalletRequest(newULID, walletId, Instant.now)
         expectMsg(CreateWalletSucceeded)
       }

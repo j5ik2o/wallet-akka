@@ -7,7 +7,7 @@ import akka.actor.typed.ActorRef
 import org.scalatest._
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.domain.{ Balance, Money }
+import wallet.domain.{ Balance, ChargeId, Money, WalletId }
 
 /**
   * Wallet集約アクターの単体テスト。
@@ -19,7 +19,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
   "WalletAggregate" - {
     // 作成
     "create" in {
-      val walletId                  = newULID
+      val walletId                  = WalletId(newULID)
       val walletRef                 = newWalletRef(walletId)
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
 
@@ -32,7 +32,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     // 入金
     "deposit" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
@@ -50,7 +50,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     // 残高確認
     "get balance" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
@@ -68,17 +68,17 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     // 請求
     "charge" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       val createWalletResponseProbe = TestProbe[CreateWalletResponse]
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
-      val chargeId            = newULID
+      val chargeId            = ChargeId(newULID)
       val money               = Money(BigDecimal(100))
       val requestRequestProbe = TestProbe[ChargeResponse]
-      walletRef ! ChargeRequest(newULID, chargeId, walletId, money, Instant.now, Some(requestRequestProbe.ref))
+      walletRef ! ChargeRequest(newULID, walletId, chargeId, money, Instant.now, Some(requestRequestProbe.ref))
       requestRequestProbe.expectMessage(ChargeSucceeded)
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
@@ -87,7 +87,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
     }
     // ドメインイベントの購読
     "addSubscribers" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       val eventProbes = for (_ <- 1 to 5) yield TestProbe[Event]

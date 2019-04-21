@@ -6,7 +6,7 @@ import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe 
 import org.scalatest.FreeSpecLike
 import wallet._
 import wallet.adaptor.typed.WalletProtocol._
-import wallet.domain.Money
+import wallet.domain.{ Money, WalletId }
 
 /**
   * PesistentActorの単体テスト。
@@ -30,7 +30,7 @@ class PersistentWalletAggregateSpec
   "PersistentWalletAggregate" - {
     "directly" - {
       "deposit" in {
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         // 永続化アクターを起動
         val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
 
@@ -57,7 +57,7 @@ class PersistentWalletAggregateSpec
     // TODO: 子アクターが例外を発生した場合に、永続化アクターが停止すること
     "via WalletAggregates" - {
       "deposit" in {
-        val walletId = newULID
+        val walletId = WalletId(newULID)
         // 永続化アクターを起動
         val walletRef = spawn(WalletAggregates.behavior(WalletAggregate.name)(PersistentWalletAggregate.behavior))
 

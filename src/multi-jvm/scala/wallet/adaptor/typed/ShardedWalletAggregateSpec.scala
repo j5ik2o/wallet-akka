@@ -13,7 +13,7 @@ import akka.testkit.ImplicitSender
 import wallet.adaptor.MultiNodeSampleConfig.{ controller, node1, node2 }
 import wallet.adaptor.typed.WalletProtocol._
 import wallet.adaptor.{ MultiNodeSampleConfig, STMultiNodeSpecSupport }
-import wallet.domain.Money
+import wallet.domain.{ Money, WalletId }
 import wallet.newULID
 
 import scala.concurrent.duration._
@@ -56,8 +56,9 @@ class ShardedWalletAggregateSpec
     }
     "createWallet" in {
       runOn(node1) {
-        val walletId                  = newULID
-        val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+        val walletId = WalletId(newULID)
+        val walletRef =
+          ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.value.toString)
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
         walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
@@ -74,8 +75,9 @@ class ShardedWalletAggregateSpec
       }
       enterBarrier("after-3")
       runOn(node2) {
-        val walletId                  = newULID
-        val walletRef                 = ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+        val walletId = WalletId(newULID)
+        val walletRef =
+          ClusterSharding(typedSystem).entityRefFor(ShardedWalletAggregates.TypeKey, walletId.value.toString)
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
         walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
         createWalletResponseProbe.expectMessage(CreateWalletSucceeded)

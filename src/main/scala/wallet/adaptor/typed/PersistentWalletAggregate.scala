@@ -24,7 +24,7 @@ object PersistentWalletAggregate {
           ctx.spawn(WalletAggregate.behavior(id, chargesLimit), WalletAggregate.name(id))
         ctx.watch(childRef)
         EventSourcedBehavior[CommandRequest, Event, State](
-          persistenceId = PersistenceId("p-" + id.toString),
+          persistenceId = PersistenceId("p-" + id.value.toString),
           emptyState = State(childRef),
           commandHandler = {
             case (state, commandRequest: CommandRequest with ToEvent) =>

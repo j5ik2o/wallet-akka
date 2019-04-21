@@ -16,7 +16,7 @@ object WalletAggregate {
   private def fireEvent(subscribers: Vector[ActorRef[Event]])(event: Event): Unit =
     subscribers.foreach(_ ! event)
 
-  def name(id: WalletId): String = "wallet-typed-" + id.toString
+  def name(id: WalletId): String = "wallet-typed-" + id.value.toString
 
   private def onUninitialized(
       id: WalletId,
@@ -53,14 +53,14 @@ object WalletAggregate {
         replyTo.foreach(_ ! CreateWalletFailed("Already created"))
         Behaviors.same
 
-      case DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
+      case m @ DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
         wallet.deposit(money, instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! DepositFailed(t.getMessage))
             Behaviors.same
           case Right(newWallet) =>
             replyTo.foreach(_ ! DepositSucceeded)
-            fireEventToSubscribers(WalletDeposited(walletId, money, instant))
+            fireEventToSubscribers(m.toEvent)
             onInitialized(
               id,
               newWallet,
@@ -68,14 +68,14 @@ object WalletAggregate {
             )
         }
 
-      case PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo) if walletId == id =>
+      case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo) if walletId == id =>
         wallet.pay(money, maybeChargeId, instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! PayFailed(t.getMessage))
             Behaviors.same
           case Right(newWallet) =>
             replyTo.foreach(_ ! PaySucceeded)
-            fireEventToSubscribers(WalletPayed(walletId, toWalletId, money, maybeChargeId, instant))
+            fireEventToSubscribers(m.toEvent)
             onInitialized(
               id,
               newWallet,
@@ -83,14 +83,14 @@ object WalletAggregate {
             )
         }
 
-      case ChargeRequest(_, questId, walletId, money, instant, replyTo) if walletId == id =>
-        wallet.addCharge(Charge(newULID, walletId, money, instant), instant) match {
+      case m @ ChargeRequest(_, walletId, chargeId, money, instant, replyTo) if walletId == id =>
+        wallet.addCharge(Charge(chargeId, walletId, money, instant), instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! ChargeFailed(t.getMessage))
             Behaviors.same
           case Right(newWallet) =>
             replyTo.foreach(_ ! ChargeSucceeded)
-            fireEventToSubscribers(WalletCharged(questId, walletId, money, instant))
+            fireEventToSubscribers(m.toEvent)
             onInitialized(
               id,
               newWallet,

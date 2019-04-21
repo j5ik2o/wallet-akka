@@ -4,6 +4,7 @@ import java.time.Instant
 
 import akka.cluster.{ Cluster, MemberStatus }
 import wallet.adaptor.untyped.WalletProtocol.{ CreateWalletRequest, CreateWalletSucceeded }
+import wallet.domain.WalletId
 import wallet.newULID
 
 import scala.concurrent.duration._
@@ -34,7 +35,7 @@ class ShardedWalletAggregatesSpec extends AkkaSpec("""
       ShardedWalletAggregatesRegion.startClusterSharding(10)
       val regionRef = ShardedWalletAggregatesRegion.shardRegion
 
-      val walletId = newULID
+      val walletId = WalletId(newULID)
       regionRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
     }

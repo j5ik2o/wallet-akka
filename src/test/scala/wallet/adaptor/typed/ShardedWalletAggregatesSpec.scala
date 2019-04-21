@@ -9,6 +9,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.typed.{ Cluster, Join }
 import org.scalatest.FreeSpecLike
 import wallet.adaptor.typed.WalletProtocol.{ CreateWalletRequest, CreateWalletResponse, CreateWalletSucceeded }
+import wallet.domain.WalletId
 import wallet.newULID
 
 import scala.concurrent.duration._
@@ -45,8 +46,8 @@ class ShardedWalletAggregatesSpec
       ShardedWalletAggregates.initEntityActor(clusterSharding, 10, 1 hours)
 
       val probe     = TestProbe[CreateWalletResponse]()(typedSystem)
-      val walletId  = newULID
-      val walletRef = clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.toString)
+      val walletId  = WalletId(newULID)
+      val walletRef = clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.value.toString)
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(probe.ref))
       probe.expectMessage(CreateWalletSucceeded)
     }

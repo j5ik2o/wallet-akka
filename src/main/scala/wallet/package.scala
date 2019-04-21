@@ -3,7 +3,7 @@ package object wallet {
 
   def newULID = new de.huxhorn.sulky.ulid.ULID().nextValue()
 
-  type WalletId  = ULID
-  type ChargeId  = ULID
+  type WalletId  = domain.WalletId
+  type ChargeId  = domain.ChargeId
   type CommandId = ULID
 }

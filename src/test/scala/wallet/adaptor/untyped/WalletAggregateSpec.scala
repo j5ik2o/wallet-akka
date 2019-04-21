@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import wallet._
 import wallet.adaptor.untyped.WalletProtocol._
-import wallet.domain.{ Balance, Money }
+import wallet.domain.{ Balance, ChargeId, Money, WalletId }
 
 /**
   * Wallet集約アクターの単体テスト。
@@ -18,7 +18,7 @@ class WalletAggregateSpec extends AkkaSpec {
   "WalletAggregate" - {
     // 作成
     "create" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
@@ -29,7 +29,7 @@ class WalletAggregateSpec extends AkkaSpec {
     }
     // 入金
     "deposit" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
@@ -44,7 +44,7 @@ class WalletAggregateSpec extends AkkaSpec {
     }
     // 残高確認
     "get balance" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
@@ -59,15 +59,15 @@ class WalletAggregateSpec extends AkkaSpec {
     }
     // 請求
     "charge" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
 
-      val chargeId = newULID
+      val chargeId = ChargeId(newULID)
       val money    = Money(BigDecimal(100))
-      walletRef ! ChargeRequest(newULID, chargeId, walletId, money, Instant.now)
+      walletRef ! ChargeRequest(newULID, walletId, chargeId, money, Instant.now)
       expectMsg(ChargeSucceeded)
 
       walletRef ! GetBalanceRequest(newULID, walletId)
@@ -75,7 +75,7 @@ class WalletAggregateSpec extends AkkaSpec {
     }
     // 支払
     "pay" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
@@ -85,7 +85,7 @@ class WalletAggregateSpec extends AkkaSpec {
       walletRef ! DepositRequest(newULID, walletId, money, Instant.now)
       expectMsg(DepositSucceeded)
 
-      val toWalletId = newULID
+      val toWalletId = WalletId(newULID)
       walletRef ! PayRequest(newULID, walletId, toWalletId, money, None, Instant.now)
       expectMsg(PaySucceeded)
 
@@ -95,7 +95,7 @@ class WalletAggregateSpec extends AkkaSpec {
     // TODO: 取引履歴の確認(akka-persistence-query)を使う
     // ドメインイベントの購読
     "addSubscribers" in {
-      val walletId  = newULID
+      val walletId  = WalletId(newULID)
       val walletRef = newWalletRef(walletId)
 
       val eventProbes = for (_ <- 1 to 5) yield TestProbe()
