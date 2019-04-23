@@ -32,7 +32,7 @@ class PersistentWalletAggregateSpec
       "deposit" in {
         val walletId = WalletId(newULID)
         // 永続化アクターを起動
-        val walletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+        val walletRef = spawn(PersistentWalletAggregate.behavior(walletId, Int.MaxValue))
 
         val createWalletResponseProbe = TestProbe[CreateWalletResponse]
         walletRef ! CreateWalletRequest(newULID, walletId, Instant.now, Some(createWalletResponseProbe.ref))
@@ -47,7 +47,7 @@ class PersistentWalletAggregateSpec
         killActors(walletRef)
 
         // 状態を復元する
-        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId, Int.MaxValue))
 
         val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
         expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)
@@ -74,7 +74,7 @@ class PersistentWalletAggregateSpec
         killActors(walletRef)
 
         // 状態を復元する
-        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId))
+        val expectedWalletRef = spawn(PersistentWalletAggregate.behavior(walletId, Int.MaxValue))
 
         val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
         expectedWalletRef ! GetBalanceRequest(newULID, walletId, getBalanceResponseProbe.ref)

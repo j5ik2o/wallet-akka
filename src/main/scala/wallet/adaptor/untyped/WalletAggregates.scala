@@ -13,6 +13,12 @@ object WalletAggregates {
 
 }
 
+/**
+  * [[WalletAggregate]]のためのメッセージブローカー。
+  *
+  * @param chargesLimit
+  * @param propsF
+  */
 private[untyped] class WalletAggregates(
     chargesLimit: Int,
     propsF: (WalletId, Int) => Props
