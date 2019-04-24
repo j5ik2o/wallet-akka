@@ -53,7 +53,7 @@ object WalletAggregate {
         replyTo.foreach(_ ! CreateWalletFailed("Already created"))
         Behaviors.same
 
-      case m @ DepositRequest(_, walletId, money, instant, replyTo) if walletId == id =>
+      case m @ DepositRequest(_, walletId, _, money, instant, replyTo) if walletId == id =>
         wallet.deposit(money, instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! DepositFailed(t.getMessage))
@@ -68,13 +68,13 @@ object WalletAggregate {
             )
         }
 
-      case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, replyTo) if walletId == id =>
+      case m @ WithdrawRequest(_, walletId, _, money, maybeChargeId, instant, replyTo) if walletId == id =>
         wallet.pay(money, maybeChargeId, instant) match {
           case Left(t) =>
-            replyTo.foreach(_ ! PayFailed(t.getMessage))
+            replyTo.foreach(_ ! WithdrawFailed(t.getMessage))
             Behaviors.same
           case Right(newWallet) =>
-            replyTo.foreach(_ ! PaySucceeded)
+            replyTo.foreach(_ ! WithdrawSucceeded$)
             fireEventToSubscribers(m.toEvent)
             onInitialized(
               id,
@@ -83,8 +83,8 @@ object WalletAggregate {
             )
         }
 
-      case m @ ChargeRequest(_, walletId, chargeId, money, instant, replyTo) if walletId == id =>
-        wallet.addCharge(Charge(chargeId, walletId, money, instant), instant) match {
+      case m @ ChargeRequest(_, walletId, toWalletId, chargeId, money, instant, replyTo) if walletId == id =>
+        wallet.addCharge(Charge(chargeId, walletId, toWalletId, money, instant), instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! ChargeFailed(t.getMessage))
             Behaviors.same

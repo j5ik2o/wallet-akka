@@ -8,7 +8,13 @@ import wallet.adaptor.json.MoneyJson
 import wallet.adaptor.typed.WalletProtocol.WalletCharged
 import wallet.domain.{ ChargeId, WalletId }
 
-final case class WalletChargedJson(chargeId: String, walletId: String, money: MoneyJson, occurredAt: Long)
+final case class WalletChargedJson(
+    chargeId: String,
+    walletId: String,
+    toWalletId: String,
+    money: MoneyJson,
+    occurredAt: Long
+)
 
 object WalletChargedJson {
 
@@ -18,6 +24,7 @@ object WalletChargedJson {
     WalletChargedJson(
       chargeId = event.chargeId.value.toString,
       walletId = event.walletId.value.toString,
+      toWalletId = event.toWalletId.value.toString,
       money = moneyJsonIso.get(event.money),
       occurredAt = event.occurredAt.toEpochMilli
     )
@@ -25,6 +32,7 @@ object WalletChargedJson {
     WalletCharged(
       chargeId = ChargeId(ULID.parseULID(json.chargeId)),
       walletId = WalletId(ULID.parseULID(json.walletId)),
+      toWalletId = WalletId(ULID.parseULID(json.toWalletId)),
       money = moneyJsonIso.reverseGet(json.money),
       occurredAt = Instant.ofEpochMilli(json.occurredAt)
     )

@@ -41,7 +41,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
 
       val depositRequestProbe = TestProbe[DepositResponse]
       val money               = Money(BigDecimal(100))
-      walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositRequestProbe.ref))
+      walletRef ! DepositRequest(newULID, walletId, walletId, money, Instant.now, Some(depositRequestProbe.ref))
       depositRequestProbe.expectMessage(DepositSucceeded)
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
@@ -59,7 +59,7 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
 
       val depositResponseProbe = TestProbe[DepositResponse]
       val money                = Money(BigDecimal(100))
-      walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+      walletRef ! DepositRequest(newULID, walletId, walletId, money, Instant.now, Some(depositResponseProbe.ref))
       depositResponseProbe.expectMessage(DepositSucceeded)
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
@@ -76,9 +76,18 @@ class WalletAggregateSpec extends ScalaTestWithActorTestKit with FreeSpecLike wi
       createWalletResponseProbe.expectMessage(CreateWalletSucceeded)
 
       val chargeId            = ChargeId(newULID)
+      val toWalletId          = WalletId(newULID)
       val money               = Money(BigDecimal(100))
       val requestRequestProbe = TestProbe[ChargeResponse]
-      walletRef ! ChargeRequest(newULID, walletId, chargeId, money, Instant.now, Some(requestRequestProbe.ref))
+      walletRef ! ChargeRequest(
+        newULID,
+        walletId,
+        toWalletId,
+        chargeId,
+        money,
+        Instant.now,
+        Some(requestRequestProbe.ref)
+      )
       requestRequestProbe.expectMessage(ChargeSucceeded)
 
       val getBalanceResponseProbe = TestProbe[GetBalanceResponse]

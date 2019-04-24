@@ -65,7 +65,7 @@ object WalletProtocol {
   }
 
   // 支払い
-  case class PayRequest(
+  case class WithdrawRequest(
       id: CommandId,
       walletId: WalletId,
       toWalletId: WalletId,
@@ -75,16 +75,16 @@ object WalletProtocol {
       noReply: Boolean = false
   ) extends CommandRequest
       with ToEvent {
-    override def toEvent: Event = WalletPayed(walletId, toWalletId, money, chargeId, createdAt)
+    override def toEvent: Event = WalletWithdrawed(walletId, toWalletId, money, chargeId, createdAt)
   }
 
-  sealed trait PayResponse extends CommandResponse
+  sealed trait WithdrawResponse extends CommandResponse
 
-  case object PaySucceeded extends PayResponse
+  case object WithdrawSucceeded$ extends WithdrawResponse
 
-  case class PayFailed(message: String) extends PayResponse
+  case class WithdrawFailed(message: String) extends WithdrawResponse
 
-  case class WalletPayed(
+  case class WalletWithdrawed(
       walletId: WalletId,
       toWalletId: WalletId,
       money: Money,
@@ -92,20 +92,21 @@ object WalletProtocol {
       occurredAt: Instant
   ) extends Event {
     override def toCommandRequest: CommandRequest =
-      PayRequest(newULID, walletId, toWalletId, money, chargeId, occurredAt, noReply = true)
+      WithdrawRequest(newULID, walletId, toWalletId, money, chargeId, occurredAt, noReply = true)
   }
 
   // 請求
   case class ChargeRequest(
       id: CommandId,
       walletId: WalletId,
+      toWalletId: WalletId,
       chargeId: ChargeId,
       money: Money,
       createdAt: Instant,
       noReply: Boolean = false
   ) extends CommandRequest
       with ToEvent {
-    override def toEvent: Event = WalletCharged(walletId, chargeId, money, createdAt)
+    override def toEvent: Event = WalletCharged(walletId, toWalletId, chargeId, money, createdAt)
   }
 
   sealed trait ChargeResponse extends CommandResponse
@@ -114,9 +115,15 @@ object WalletProtocol {
 
   case class ChargeFailed(message: String) extends ChargeResponse
 
-  case class WalletCharged(walletId: WalletId, chargeId: ChargeId, money: Money, occurredAt: Instant) extends Event {
+  case class WalletCharged(
+      walletId: WalletId,
+      toWalletId: WalletId,
+      chargeId: ChargeId,
+      money: Money,
+      occurredAt: Instant
+  ) extends Event {
     override def toCommandRequest: CommandRequest =
-      ChargeRequest(newULID, walletId, chargeId, money, occurredAt, noReply = true)
+      ChargeRequest(newULID, walletId, toWalletId, chargeId, money, occurredAt, noReply = true)
   }
 
   // 残高確認

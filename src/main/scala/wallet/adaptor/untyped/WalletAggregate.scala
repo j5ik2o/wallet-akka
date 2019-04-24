@@ -72,15 +72,15 @@ private[untyped] final class WalletAggregate(id: WalletId, chargesLimit: Int) ex
           )
       }
 
-    case m @ PayRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply) if walletId == id =>
+    case m @ WithdrawRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply) if walletId == id =>
       log.debug(s"message = $m")
       wallet.pay(money, maybeChargeId, instant) match {
         case Left(t) =>
           if (!noReply)
-            sender() ! PayFailed(t.getMessage)
+            sender() ! WithdrawFailed(t.getMessage)
         case Right(newWallet) =>
           if (!noReply)
-            sender() ! PaySucceeded
+            sender() ! WithdrawSucceeded$
           fireEvent(subscribers)(m.toEvent)
           context.become(
             onInitialized(
@@ -91,9 +91,9 @@ private[untyped] final class WalletAggregate(id: WalletId, chargesLimit: Int) ex
 
       }
 
-    case rr @ ChargeRequest(_, walletId, chargeId, money, instant, noReply) if walletId == id =>
+    case rr @ ChargeRequest(_, walletId, toWalletId, chargeId, money, instant, noReply) if walletId == id =>
       log.debug(s"message = $rr")
-      wallet.addCharge(Charge(ChargeId(newULID), walletId, money, instant), instant) match {
+      wallet.addCharge(Charge(ChargeId(newULID), walletId, toWalletId, money, instant), instant) match {
         case Left(t) =>
           if (!noReply)
             sender() ! ChargeFailed(t.getMessage)

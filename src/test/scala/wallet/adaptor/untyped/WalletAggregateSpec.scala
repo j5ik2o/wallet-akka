@@ -65,9 +65,10 @@ class WalletAggregateSpec extends AkkaSpec {
       walletRef ! CreateWalletRequest(newULID, walletId, Instant.now)
       expectMsg(CreateWalletSucceeded)
 
-      val chargeId = ChargeId(newULID)
-      val money    = Money(BigDecimal(100))
-      walletRef ! ChargeRequest(newULID, walletId, chargeId, money, Instant.now)
+      val chargeId   = ChargeId(newULID)
+      val toWalletId = WalletId(newULID)
+      val money      = Money(BigDecimal(100))
+      walletRef ! ChargeRequest(newULID, walletId, toWalletId, chargeId, money, Instant.now)
       expectMsg(ChargeSucceeded)
 
       walletRef ! GetBalanceRequest(newULID, walletId)
@@ -86,8 +87,8 @@ class WalletAggregateSpec extends AkkaSpec {
       expectMsg(DepositSucceeded)
 
       val toWalletId = WalletId(newULID)
-      walletRef ! PayRequest(newULID, walletId, toWalletId, money, None, Instant.now)
-      expectMsg(PaySucceeded)
+      walletRef ! WithdrawRequest(newULID, walletId, toWalletId, money, None, Instant.now)
+      expectMsg(WithdrawSucceeded$)
 
       walletRef ! GetBalanceRequest(newULID, walletId)
       expectMsg(GetBalanceResponse(Balance(Money.zero)))

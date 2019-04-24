@@ -26,7 +26,7 @@ object PersistentWalletAggregate {
           Effect.persist(c.toEvent).thenRun { _ =>
             replyTo.foreach(_ ! CreateWalletSucceeded)
           }
-        case (DefinedState(wallet), c @ DepositRequest(_, walletId, money, createdAt, replyTo)) if walletId == id =>
+        case (DefinedState(wallet), c @ DepositRequest(_, walletId, _, money, createdAt, replyTo)) if walletId == id =>
           Effect.persist(c.toEvent).thenRun { _ =>
             wallet.deposit(money, createdAt) match {
               case Left(t) =>
@@ -35,24 +35,26 @@ object PersistentWalletAggregate {
                 replyTo.foreach(_ ! DepositSucceeded)
             }
           }
-        case (DefinedState(wallet), c @ ChargeRequest(_, walletId, chargeId, money, createdAt, replyTo)) =>
+        case (DefinedState(wallet), c @ ChargeRequest(_, walletId, toWalletId, chargeId, money, createdAt, replyTo))
+            if walletId == id =>
           Effect.persist(c.toEvent).thenRun { _ =>
-            wallet.addCharge(Charge(chargeId, walletId, money, createdAt), createdAt) match {
+            wallet.addCharge(Charge(chargeId, walletId, toWalletId, money, createdAt), createdAt) match {
               case Left(t) =>
                 replyTo.foreach(_ ! ChargeFailed(t.getMessage))
               case Right(_) =>
                 replyTo.foreach(_ ! ChargeSucceeded)
             }
           }
-        case (DefinedState(wallet), c @ PayRequest(_, walletId, _, money, maybeChargeId, createdAt, replyTo))
+        // 支払う
+        case (DefinedState(wallet), c @ WithdrawRequest(_, walletId, _, money, maybeChargeId, createdAt, replyTo))
             if walletId == id =>
           Effect.persist(c.toEvent).thenRun { _ =>
             wallet.pay(money, maybeChargeId, createdAt) match {
               case Left(t) =>
-                replyTo.foreach(_ ! PayFailed(t.getMessage))
+                replyTo.foreach(_ ! WithdrawFailed(t.getMessage))
                 Behaviors.same
               case Right(_) =>
-                replyTo.foreach(_ ! PaySucceeded)
+                replyTo.foreach(_ ! WithdrawSucceeded$)
             }
           }
         case (DefinedState(wallet), GetBalanceRequest(_, walletId, replyTo)) if walletId == id =>
@@ -65,8 +67,11 @@ object PersistentWalletAggregate {
         case (DefinedState(wallet), e: WalletDeposited) =>
           DefinedState(wallet.deposit(e.money, e.occurredAt).right.get)
         case (DefinedState(wallet), e: WalletCharged) =>
-          DefinedState(wallet.addCharge(Charge(e.chargeId, e.walletId, e.money, e.occurredAt), e.occurredAt).right.get)
-        case (DefinedState(wallet), e: WalletPayed) =>
+          DefinedState(
+            wallet
+              .addCharge(Charge(e.chargeId, e.walletId, e.toWalletId, e.money, e.occurredAt), e.occurredAt).right.get
+          )
+        case (DefinedState(wallet), e: WalletWithdrawed) =>
           DefinedState(wallet.pay(e.money, e.chargeId, e.occurredAt).right.get)
         case (state, _) =>
           state

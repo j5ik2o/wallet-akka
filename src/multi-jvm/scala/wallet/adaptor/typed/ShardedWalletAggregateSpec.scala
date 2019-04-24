@@ -65,7 +65,7 @@ class ShardedWalletAggregateSpec
 
         val depositResponseProbe = TestProbe[DepositResponse]
         val money                = Money(BigDecimal(100))
-        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        walletRef ! DepositRequest(newULID, walletId, walletId, money, Instant.now, Some(depositResponseProbe.ref))
         depositResponseProbe.expectMessage(DepositSucceeded)
 
         val getBalanceResponseProbe = TestProbe[GetBalanceResponse]
@@ -84,7 +84,7 @@ class ShardedWalletAggregateSpec
 
         val depositResponseProbe = TestProbe[DepositResponse]
         val money                = Money(BigDecimal(100))
-        walletRef ! DepositRequest(newULID, walletId, money, Instant.now, Some(depositResponseProbe.ref))
+        walletRef ! DepositRequest(newULID, walletId, walletId, money, Instant.now, Some(depositResponseProbe.ref))
         depositResponseProbe.expectMessage(DepositSucceeded)
 
         val getBalanceResponseProbe = TestProbe[GetBalanceResponse]

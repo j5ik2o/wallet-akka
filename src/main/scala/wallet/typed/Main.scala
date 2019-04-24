@@ -25,7 +25,7 @@ object Main extends App {
     clusterSharding.entityRefFor(ShardedWalletAggregates.TypeKey, walletId.value.toString)
 
   walletRef ! CreateWalletRequest(wallet.newULID, walletId, Instant.now, None)
-  walletRef ! DepositRequest(wallet.newULID, walletId, Money(BigDecimal(100)), Instant.now, None)
+  walletRef ! DepositRequest(wallet.newULID, walletId, walletId, Money(BigDecimal(100)), Instant.now, None)
 
   sys.addShutdownHook {
     system.terminate()
