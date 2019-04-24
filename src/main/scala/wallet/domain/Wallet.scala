@@ -15,14 +15,14 @@ final case class Wallet(
     updatedAt: Instant
 ) {
 
-  def deposit(other: Money, updatedAt: Instant): Either[Throwable, Wallet] = {
-    if (balance.add(other) < Balance.zero)
+  def deposit(money: Money, updatedAt: Instant): Either[Throwable, Wallet] = {
+    if (balance.add(money) < Balance.zero)
       Left(new IllegalArgumentException("Can not trade because the balance after trading is less than 0"))
     else
-      Right(copy(balance = balance.add(other), updatedAt = updatedAt))
+      Right(copy(balance = balance.add(money), updatedAt = updatedAt))
   }
 
-  def pay(money: Money, maybeChargeId: Option[ChargeId], updatedAt: Instant): Either[Throwable, Wallet] = {
+  def withdraw(money: Money, maybeChargeId: Option[ChargeId], updatedAt: Instant): Either[Throwable, Wallet] = {
     if (maybeChargeId.nonEmpty && !charges.map(_.id).exists(v => maybeChargeId.contains(v)))
       Left(new IllegalArgumentException("ChargeId is not found"))
     else if (balance.sub(money) < Balance.zero)

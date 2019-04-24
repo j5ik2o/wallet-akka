@@ -49,7 +49,7 @@ object PersistentWalletAggregate {
         case (DefinedState(wallet), c @ WithdrawRequest(_, walletId, _, money, maybeChargeId, createdAt, replyTo))
             if walletId == id =>
           Effect.persist(c.toEvent).thenRun { _ =>
-            wallet.pay(money, maybeChargeId, createdAt) match {
+            wallet.withdraw(money, maybeChargeId, createdAt) match {
               case Left(t) =>
                 replyTo.foreach(_ ! WithdrawFailed(t.getMessage))
                 Behaviors.same
@@ -72,7 +72,7 @@ object PersistentWalletAggregate {
               .addCharge(Charge(e.chargeId, e.walletId, e.toWalletId, e.money, e.occurredAt), e.occurredAt).right.get
           )
         case (DefinedState(wallet), e: WalletWithdrawed) =>
-          DefinedState(wallet.pay(e.money, e.chargeId, e.occurredAt).right.get)
+          DefinedState(wallet.withdraw(e.money, e.chargeId, e.occurredAt).right.get)
         case (state, _) =>
           state
       }

@@ -74,7 +74,7 @@ private[untyped] final class WalletAggregate(id: WalletId, chargesLimit: Int) ex
 
     case m @ WithdrawRequest(_, walletId, toWalletId, money, maybeChargeId, instant, noReply) if walletId == id =>
       log.debug(s"message = $m")
-      wallet.pay(money, maybeChargeId, instant) match {
+      wallet.withdraw(money, maybeChargeId, instant) match {
         case Left(t) =>
           if (!noReply)
             sender() ! WithdrawFailed(t.getMessage)

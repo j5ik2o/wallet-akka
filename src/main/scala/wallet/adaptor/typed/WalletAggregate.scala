@@ -69,7 +69,7 @@ object WalletAggregate {
         }
 
       case m @ WithdrawRequest(_, walletId, _, money, maybeChargeId, instant, replyTo) if walletId == id =>
-        wallet.pay(money, maybeChargeId, instant) match {
+        wallet.withdraw(money, maybeChargeId, instant) match {
           case Left(t) =>
             replyTo.foreach(_ ! WithdrawFailed(t.getMessage))
             Behaviors.same
